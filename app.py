@@ -198,6 +198,7 @@ def extract_youtube_id(url):
 def index():
     return render_template('index.html')
 
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -216,29 +217,34 @@ def register():
             username=form.username.data,
             email=form.email.data,
             phone=form.phone.data,
-            email_verified=False  # Start unverified
+            email_verified=False
         )
         user.set_password(form.password.data)
 
-        db.session.add(user)
-        db.session.commit()
-
-        # Try to send email but don't crash if it fails
         try:
-            from email_utils import send_verification_email
-            success, errors = send_verification_email(user)
-            if success:
-                flash('Registration successful! Please check your email to verify your account.', 'success')
-            else:
-                # Log the error but don't show to user (security)
-                app.logger.error(f"Email sending failed for {user.email}: {errors}")
-                flash('Registration successful! However, there was an issue sending the verification email. Please contact support or try logging in - you may need to request a new verification link.', 'warning')
+            db.session.add(user)
+            db.session.commit()
         except Exception as e:
-            app.logger.error(f"Unexpected error sending email to {user.email}: {str(e)}")
-            flash('Registration successful! Please check your email for verification link.', 'success')
+            app.logger.error(f"Database error during registration: {str(e)}")
+            flash('Registration failed. Please try again.', 'danger')
+            return redirect(url_for('register'))
 
-        # Redirect to verification reminder page instead of login
-        return redirect(url_for('verify_email_reminder'))
+        # Send verification email in background (don't let it block)
+        try:
+            # Use a timeout to prevent hanging
+            import threading
+            email_thread = threading.Thread(target=send_verification_email, args=(user,))
+            email_thread.daemon = True
+            email_thread.start()
+
+            flash('Registration successful! Please check your email to verify your account.', 'success')
+        except Exception as e:
+            app.logger.error(f"Email sending failed for {user.email}: {str(e)}")
+            flash(
+                'Registration successful! However, there was an issue sending the verification email. You can request a new verification link after logging in.',
+                'warning')
+
+        return redirect(url_for('login'))
 
     return render_template('register.html', form=form)
 
