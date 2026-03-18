@@ -37,20 +37,15 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
-# Add to your app.config
+# File upload configuration
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-
-app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
+app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', os.path.join(BASE_DIR, 'uploads'))
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB
 app.config['ALLOWED_EXTENSIONS'] = {
-    # Video
-    'mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv',
-    # Audio
-    'mp3', 'wav', 'ogg', 'm4a',
-    # Documents
-    'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt',
-    # Images (for thumbnails)
-    'jpg', 'jpeg', 'png', 'gif'
+    'mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv',  # Video
+    'mp3', 'wav', 'ogg', 'm4a',                 # Audio
+    'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt',  # Documents
+    'jpg', 'jpeg', 'png', 'gif'                  # Images
 }
 
 # Create upload folder if it doesn't exist
@@ -70,7 +65,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
 
-
 # Email config
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
@@ -87,8 +81,10 @@ app.config['PAYCHANGU_PUBLIC_KEY'] = os.getenv('PAYCHANGU_PUBLIC_KEY')
 app.config['PAYCHANGU_SECRET_KEY'] = os.getenv('PAYCHANGU_SECRET_KEY')
 app.config['PAYCHANGU_WEBHOOK_SECRET'] = os.getenv('PAYCHANGU_WEBHOOK_SECRET')
 app.config['PAYCHANGU_MODE'] = os.getenv('PAYCHANGU_MODE', 'sandbox')
-app.config['SITE_URL'] = os.getenv('SITE_URL', 'http://localhost:5000')
-app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', 'uploads')
+
+# ✅ IMPORTANT - Site URL for emails and webhooks
+app.config['SITE_URL'] = os.getenv('SITE_URL', 'https://mymsce.onrender.com').rstrip('/')
+
 
 # Initialize extensions
 db.init_app(app)
@@ -98,6 +94,13 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message_category = 'info'
 
+@app.context_processor
+def inject_site_url():
+    """Make SITE_URL available in all templates"""
+    return dict(site_url=app.config['SITE_URL'])
+
+
+
 @app.after_request
 def add_no_cache_headers(response):
     """Prevent caching of all pages"""
@@ -105,6 +108,31 @@ def add_no_cache_headers(response):
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
     return response
+
+
+@app.route('/test-email-debug')
+@login_required
+def test_email_debug():
+    if not current_user.is_admin:
+        return "Admin only", 403
+
+    from email_utils import test_smtp_connection
+    success, message = test_smtp_connection()
+
+    return f"""
+    <h1>Email Test Result</h1>
+    <p>Success: {success}</p>
+    <p>Message: {message}</p>
+    <p>Config:</p>
+    <ul>
+        <li>MAIL_SERVER: {app.config.get('MAIL_SERVER')}</li>
+        <li>MAIL_PORT: {app.config.get('MAIL_PORT')}</li>
+        <li>MAIL_USE_TLS: {app.config.get('MAIL_USE_TLS')}</li>
+        <li>MAIL_USERNAME: {app.config.get('MAIL_USERNAME')}</li>
+        <li>MAIL_PASSWORD: {'*' * 8 if app.config.get('MAIL_PASSWORD') else 'NOT SET'}</li>
+        <li>SITE_URL: {app.config.get('SITE_URL')}</li>
+    </ul>
+    """
 
 
 
@@ -168,7 +196,6 @@ def extract_youtube_id(url):
 def index():
     return render_template('index.html')
 
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -186,23 +213,24 @@ def register():
         user = User(
             username=form.username.data,
             email=form.email.data,
-            phone=form.phone.data
+            phone=form.phone.data,
+            email_verified=False  # Start unverified
         )
         user.set_password(form.password.data)
 
         db.session.add(user)
         db.session.commit()
 
-        # Send verification email
+        # Try to send email but don't crash if it fails
         try:
+            from email_utils import send_verification_email
             success, errors = send_verification_email(user)
             if success:
                 flash('Registration successful! Please check your email to verify your account.', 'success')
             else:
+                # Log the error but don't show to user (security)
                 app.logger.error(f"Email sending failed for {user.email}: {errors}")
-                flash(
-                    'Registration successful! However, there was an issue sending the verification email. Please contact support.',
-                    'warning')
+                flash('Registration successful! However, there was an issue sending the verification email. Please contact support or try logging in - you may need to request a new verification link.', 'warning')
         except Exception as e:
             app.logger.error(f"Unexpected error sending email to {user.email}: {str(e)}")
             flash('Registration successful! Please check your email for verification link.', 'success')
@@ -210,7 +238,6 @@ def register():
         return redirect(url_for('login'))
 
     return render_template('register.html', form=form)
-
 
 @app.route('/verify-email/<token>')
 def verify_email(token):
@@ -231,6 +258,28 @@ def verify_email(token):
         flash('Your email has been verified! You can now login.', 'success')
     else:
         flash('Email already verified or invalid.', 'info')
+
+    return redirect(url_for('login'))
+
+
+@app.route('/resend-verification/<email>')
+def resend_verification(email):
+    """Resend verification email"""
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        flash('User not found', 'danger')
+        return redirect(url_for('login'))
+
+    if user.email_verified:
+        flash('Email already verified', 'info')
+        return redirect(url_for('login'))
+
+    try:
+        send_verification_email(user)
+        flash('Verification email resent. Please check your inbox.', 'success')
+    except Exception as e:
+        app.logger.error(f"Failed to resend email: {e}")
+        flash('Could not send verification email. Please try again later.', 'danger')
 
     return redirect(url_for('login'))
 
