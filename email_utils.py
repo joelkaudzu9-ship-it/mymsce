@@ -4,6 +4,25 @@ import logging
 import secrets
 from datetime import datetime, timedelta
 
+# email_utils.py - Add this helper function
+from flask import current_app
+
+def get_site_url():
+    """Get the base site URL from config"""
+    site_url = current_app.config.get('SITE_URL', 'http://localhost:5000')
+    # Remove trailing slash if present
+    if site_url.endswith('/'):
+        site_url = site_url[:-1]
+    return site_url
+
+def site_url_for(endpoint, **kwargs):
+    """Generate a URL using SITE_URL instead of localhost"""
+    from flask import url_for
+    site_url = get_site_url()
+    path = url_for(endpoint, **kwargs)
+    return f"{site_url}{path}"
+
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -72,8 +91,11 @@ def confirm_token(token, expiration=3600):
 
 def send_verification_email(user):
     """Send email verification link"""
+    site_url = current_app.config.get('SITE_URL', 'https://mymsce.onrender.com')
+
     token = generate_token(user.email)
-    verify_url = url_for('verify_email', token=token, _external=True)
+    verify_url = f"{site_url}/verify-email/{token}"
+
 
     html_content = f'''
     <!DOCTYPE html>
