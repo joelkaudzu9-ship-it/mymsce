@@ -32,6 +32,8 @@ def flash_message(message, category='info'):
     flash(message, category)
 
 
+
+
 load_dotenv()
 
 app = Flask(__name__)
