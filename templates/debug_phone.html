@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Phone Debug{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1>Phone Number Debug</h1>
+    <p>Testing phone number: <strong>{{ phone }}</strong></p>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Results</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Format</th>
+                        <th>Input</th>
+                        <th>Prefix</th>
+                        <th>Detected</th>
+                        <th>Operator</th>
+                        <th>Operator ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, result in results.items() %}
+                    <tr>
+                        <td>{{ name }}</td>
+                        <td>{{ result.input }}</td>
+                        <td>{{ result.prefix }}</td>
+                        <td>
+                            {% if result.detected %}
+                                <span class="badge bg-success">Yes</span>
+                            {% else %}
+                                <span class="badge bg-danger">No</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ result.operator }}</td>
+                        <td><code>{{ result.operator_id or 'None' }}</code></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Current Mapping</h5>
+        </div>
+        <div class="card-body">
+            <ul>
+                <li><strong>Airtel Prefixes:</strong> {{ mapping.airtel_prefixes|join(', ') }}</li>
+                <li><strong>TNM Prefixes:</strong> {{ mapping.tnm_prefixes|join(', ') }}</li>
+                <li><strong>Airtel Operator ID:</strong> <code>{{ mapping.airtel_id }}</code></li>
+                <li><strong>TNM Operator ID:</strong> <code>{{ mapping.tnm_id }}</code></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="javascript:history.back()" class="btn btn-secondary">Go Back</a>
+    </div>
+</div>
+{% endblock %}

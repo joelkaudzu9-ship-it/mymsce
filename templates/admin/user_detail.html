@@ -1,0 +1,1187 @@
+<!-- templates/admin/user_detail.html - UPDATED WITH PAYMENTS DATA -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover">
+    <title>User Details - {{ user.username }} | myMSCE Admin</title>
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="{{ url_for('static', filename='js/history-manager.js') }}"></script>
+
+    <style>
+        /* Gold on Navy with Morphism */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a2b4c;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Subtle grain texture */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.03"/></svg>');
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.15;
+        }
+
+        /* ===== PAGE LOADER ===== */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1a2b4c;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s ease;
+        }
+        .page-loader.hidden { opacity: 0; pointer-events: none; }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(251, 191, 36, 0.1);
+            border-top-color: #fbbf24;
+            border-radius: 50%;
+            animation: spin 0.8s cubic-bezier(0.2, 0.9, 0.3, 1) infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== SKELETON LOADING STATES ===== */
+        .skeleton {
+            background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0.03) 25%,
+                rgba(251, 191, 36, 0.1) 50%,
+                rgba(255, 255, 255, 0.03) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-card {
+            background: rgba(30, 58, 95, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 28px;
+            padding: 24px;
+            border: 1px solid rgba(251, 191, 36, 0.1);
+        }
+
+        .skeleton-line {
+            height: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        /* ===== MAIN CONTAINER ===== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-btn {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fbbf24;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+        }
+
+        .back-btn:hover {
+            background: #fbbf24;
+            color: #1a2b4c;
+            transform: translateX(-4px);
+        }
+
+        .back-btn:active { transform: scale(0.95) translateX(-4px); }
+
+        .header-left h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0;
+        }
+
+        .header-left h1 i {
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+            padding: 10px;
+            border-radius: 16px;
+        }
+
+        .payments-link {
+            padding: 12px 24px;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 40px;
+            color: #fbbf24;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .payments-link:hover {
+            background: #fbbf24;
+            color: #1a2b4c;
+            transform: translateY(-2px);
+        }
+
+        .payments-link i { transition: transform 0.2s; }
+        .payments-link:hover i { transform: translateX(4px); }
+
+        /* ===== USER HEADER CARD ===== */
+        .user-header {
+            background: rgba(30, 58, 95, 0.3);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 28px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(251, 191, 36, 0.15);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            animation: slideUp 0.5s ease 0.1s both;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .avatar {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #fbbf24, #2563eb);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 700;
+            color: #1a2b4c;
+            box-shadow: 0 15px 30px -8px rgba(0,0,0,0.4);
+            border: 3px solid rgba(251, 191, 36, 0.3);
+            transition: transform 0.3s;
+        }
+
+        .avatar:hover {
+            transform: scale(1.05);
+            border-color: #fbbf24;
+        }
+
+        .user-title {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .user-title h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: white;
+        }
+
+        .user-title p {
+            color: rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .user-title p i { color: #fbbf24; }
+
+        .badge-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(4px);
+        }
+
+        .badge.admin {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .badge.subscribed {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge.unsubscribed {
+            background: rgba(100, 116, 139, 0.15);
+            color: #94a3b8;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        .badge.verified {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .badge.unverified {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* ===== GRID LAYOUT ===== */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== GLASS CARDS ===== */
+        .card {
+            background: rgba(30, 58, 95, 0.3);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 28px;
+            padding: 24px;
+            border: 1px solid rgba(251, 191, 36, 0.15);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            animation: cardFade 0.5s ease 0.2s both;
+        }
+
+        @keyframes cardFade {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .card:hover {
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(251, 191, 36, 0.1);
+        }
+
+        .card-header i {
+            font-size: 1.5rem;
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+            padding: 8px;
+            border-radius: 14px;
+        }
+
+        .card-header h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+            flex: 1;
+            margin: 0;
+        }
+
+        /* ===== INFO LIST ===== */
+        .info-list {
+            list-style: none;
+        }
+
+        .info-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(251, 191, 36, 0.1);
+        }
+
+        .info-list li:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-label i {
+            color: #fbbf24;
+            width: 20px;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: white;
+        }
+
+        .text-success { color: #10b981; }
+        .text-warning { color: #f59e0b; }
+        .text-danger { color: #ef4444; }
+
+        /* ===== SUBSCRIPTION CARD ===== */
+        .subscription-details {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(4px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 8px;
+        }
+
+        .plan-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 16px;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .expiry-bar {
+            margin: 16px 0 8px;
+        }
+
+        .expiry-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #fbbf24, #2563eb);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        /* ===== PAYMENTS PREVIEW ===== */
+        .payments-preview {
+            margin-top: 8px;
+        }
+
+        .payment-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(251, 191, 36, 0.1);
+        }
+
+        .payment-row:last-child {
+            border-bottom: none;
+        }
+
+        .payment-info {
+            flex: 1;
+        }
+
+        .payment-date {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .payment-ref {
+            font-family: monospace;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.75rem;
+        }
+
+        .payment-amount {
+            font-weight: 700;
+            color: #fbbf24;
+            font-size: 1.1rem;
+            text-align: right;
+            margin-bottom: 4px;
+        }
+
+        .payment-status {
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .status-completed {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status-failed {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .view-all-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #fbbf24;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-top: 16px;
+            padding: 10px 20px;
+            background: rgba(251, 191, 36, 0.1);
+            border-radius: 40px;
+            transition: all 0.2s;
+        }
+
+        .view-all-link:hover {
+            background: #fbbf24;
+            color: #1a2b4c;
+        }
+
+        .view-all-link i { transition: transform 0.2s; }
+        .view-all-link:hover i { transform: translateX(4px); }
+
+        .payment-count {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 2px 10px;
+            background: rgba(251, 191, 36, 0.1);
+            border-radius: 30px;
+            color: #fbbf24;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* ===== ACTION BUTTONS ===== */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+            text-decoration: none;
+            backdrop-filter: blur(4px);
+        }
+
+        .btn:active { transform: scale(0.97); }
+
+        .btn-primary {
+            background: #fbbf24;
+            color: #1a2b4c;
+        }
+
+        .btn-primary:hover {
+            background: #f59e0b;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(251, 191, 36, 0.3);
+        }
+
+        .btn-warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-warning:hover {
+            background: #f59e0b;
+            color: #1a2b4c;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: #ef4444;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(251, 191, 36, 0.1);
+            color: white;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: rgba(255, 255, 255, 0.1);
+            margin-bottom: 12px;
+        }
+
+        .empty-state p {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* ===== MODAL ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(30, 58, 95, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6);
+            animation: modalIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-content p {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .modal-content strong {
+            color: #fbbf24;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* ===== TOAST NOTIFICATIONS ===== */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 0;
+            right: 0;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+            padding: 0 16px;
+        }
+
+        .toast {
+            background: rgba(26, 43, 76, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-left: 4px solid #fbbf24;
+            padding: 14px 20px;
+            border-radius: 60px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+            width: 100%;
+            max-width: 380px;
+            animation: toastIn 0.3s ease;
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast i { color: #fbbf24; }
+
+        .toast button {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            margin-left: auto;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 640px) {
+            .user-header { flex-direction: column; text-align: center; }
+            .badge-group { justify-content: center; }
+            .action-buttons { grid-template-columns: 1fr; }
+            .modal-actions { flex-direction: column; }
+            body { padding: 12px; }
+            .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .back-btn { width: 40px; height: 40px; }
+            .payments-link { width: 100%; justify-content: center; }
+        }
+
+        /* ===== SAFE AREAS ===== */
+        @supports (padding: max(0px)) {
+            body {
+                padding-left: max(20px, env(safe-area-inset-left));
+                padding-right: max(20px, env(safe-area-inset-right));
+                padding-top: max(20px, env(safe-area-inset-top));
+                padding-bottom: max(20px, env(safe-area-inset-bottom));
+            }
+            .toast-container {
+                top: max(20px, env(safe-area-inset-top));
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Loader -->
+    <div class="page-loader" id="pageLoader">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Reset Password Modal -->
+    <div class="modal" id="resetModal">
+        <div class="modal-content">
+            <h3><i class="bi bi-key" style="color: #fbbf24;"></i> Reset Password</h3>
+            <p>Are you sure you want to reset the password for <strong>{{ user.username }}</strong>? A reset link will be sent to their email.</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="resetPassword()">
+                    <i class="bi bi-send"></i>
+                    Send Reset Link
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Toggle Modal -->
+    <div class="modal" id="adminModal">
+        <div class="modal-content">
+            <h3><i class="bi bi-shield" style="color: #fbbf24;"></i> {% if user.is_admin %}Remove Admin{% else %}Make Admin{% endif %}</h3>
+            <p>Are you sure you want to {% if user.is_admin %}remove admin privileges from{% else %}grant admin privileges to{% endif %} <strong>{{ user.username }}</strong>?</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-warning" onclick="toggleAdmin()">
+                    <i class="bi bi-shield"></i>
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete User Modal -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content">
+            <h3 style="color: #ef4444;"><i class="bi bi-trash"></i> Delete User</h3>
+            <p>This action cannot be undone. All data associated with <strong>{{ user.username }}</strong> will be permanently deleted.</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="deleteUser()">
+                    <i class="bi bi-trash"></i>
+                    Delete Permanently
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header with Payment History Link -->
+        <div class="header">
+            <div class="header-left">
+                <a href="{{ url_for('admin_users') }}" class="back-btn">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h1>
+                    <i class="bi bi-person-circle"></i>
+                    User Details
+                </h1>
+            </div>
+            <a href="{{ url_for('admin_user_payments', user_id=user.id) }}" class="payments-link">
+                <i class="bi bi-credit-card"></i>
+                View All Payments
+                <span class="payment-count">{{ payments|length }}</span>
+                <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+
+        <!-- User Header Card -->
+        <div class="user-header">
+            <div class="avatar">
+                {{ user.username[0]|upper }}
+            </div>
+            <div class="user-title">
+                <h2>{{ user.username }}</h2>
+                <p>
+                    <i class="bi bi-envelope-fill"></i> {{ user.email }}
+                    {% if user.phone %}
+                        <i class="bi bi-telephone-fill"></i> {{ user.phone }}
+                    {% endif %}
+                </p>
+            </div>
+            <div class="badge-group">
+                {% if user.is_admin %}
+                    <span class="badge admin"><i class="bi bi-shield-lock-fill"></i> Admin</span>
+                {% endif %}
+
+                {% if user.is_active_subscriber %}
+                    <span class="badge subscribed"><i class="bi bi-star-fill"></i> Active</span>
+                {% else %}
+                    <span class="badge unsubscribed"><i class="bi bi-star"></i> No Subscription</span>
+                {% endif %}
+
+                {% if user.email_verified %}
+                    <span class="badge verified"><i class="bi bi-check-circle-fill"></i> Verified</span>
+                {% else %}
+                    <span class="badge unverified"><i class="bi bi-exclamation-circle-fill"></i> Unverified</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Grid Layout -->
+        <div class="grid">
+            <!-- Left Column -->
+            <div>
+                <!-- Account Info Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-info-circle"></i>
+                        <h3>Account Information</h3>
+                    </div>
+                    <ul class="info-list">
+                        <li>
+                            <span class="info-label"><i class="bi bi-person"></i> User ID</span>
+                            <span class="info-value">#{{ user.id }}</span>
+                        </li>
+                        <li>
+                            <span class="info-label"><i class="bi bi-calendar"></i> Member Since</span>
+                            <span class="info-value">{{ user.created_at.strftime('%d %B %Y') }}</span>
+                        </li>
+                        <li>
+                            <span class="info-label"><i class="bi bi-clock"></i> Last Active</span>
+                            <span class="info-value">{{ user.last_active.strftime('%d %b %Y, %H:%M') if user.last_active else 'Never' }}</span>
+                        </li>
+                    </ul>
+
+                    <!-- Admin Actions -->
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="showModal('reset')">
+                            <i class="bi bi-key"></i>
+                            Reset Password
+                        </button>
+                        <button class="btn btn-warning" onclick="showModal('admin')">
+                            <i class="bi bi-shield"></i>
+                            {% if user.is_admin %}Remove Admin{% else %}Make Admin{% endif %}
+                        </button>
+                        <button class="btn btn-danger" onclick="showModal('delete')">
+                            <i class="bi bi-trash"></i>
+                            Delete User
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div>
+                <!-- Subscription Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-star-fill"></i>
+                        <h3>Subscription Details</h3>
+                    </div>
+
+                    {% if user.is_active_subscriber %}
+                        <div class="subscription-details">
+                            <span class="plan-badge">
+                                {{ user.subscription_form|upper }} - {{ user.subscription_type|title }}
+                            </span>
+
+                            <ul class="info-list">
+                                <li>
+                                    <span class="info-label"><i class="bi bi-calendar-check"></i> Expiry Date</span>
+                                    <span class="info-value">{{ user.subscription_expiry.strftime('%d %B %Y') }}</span>
+                                </li>
+                                <li>
+                                    <span class="info-label"><i class="bi bi-hourglass"></i> Days Remaining</span>
+                                    <span class="info-value">
+                                        <span class="{% if user.get_subscription_days_left() < 3 %}text-danger{% elif user.get_subscription_days_left() < 7 %}text-warning{% else %}text-success{% endif %}">
+                                            {{ user.get_subscription_days_left() }} days
+                                        </span>
+                                    </span>
+                                </li>
+                            </ul>
+
+                            <div class="expiry-bar">
+                                <div class="expiry-header">
+                                    <span>Progress</span>
+                                    <span>{{ user.get_subscription_days_left() }} days left</span>
+                                </div>
+                                <div class="progress-bar">
+                                    {% set total_days = 30 if user.subscription_type == 'monthly' else 7 if user.subscription_type == 'weekly' else 1 %}
+                                    {% set progress = (user.get_subscription_days_left() / total_days * 100) %}
+                                    <div class="progress-fill" style="width: {{ progress }}%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-star"></i>
+                            <p>No active subscription</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Recent Payments Preview -->
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <i class="bi bi-credit-card"></i>
+                        <h3>Recent Payments</h3>
+                    </div>
+
+                    {% if payments %}
+                        <div class="payments-preview">
+                            {% for payment in payments[:3] %}
+                                <div class="payment-row">
+                                    <div class="payment-info">
+                                        <div class="payment-date">{{ payment.created_at.strftime('%d %b %Y, %H:%M') }}</div>
+                                        <div class="payment-ref">{{ payment.reference }}</div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div class="payment-amount">MWK {{ "{:,.0f}".format(payment.amount) }}</div>
+                                        <div>
+                                            <span class="payment-status status-{{ payment.status }}">
+                                                {{ payment.status }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        {% if payments|length > 3 %}
+                            <a href="{{ url_for('admin_user_payments', user_id=user.id) }}" class="view-all-link">
+                                View All {{ payments|length }} Payments
+                                <i class="bi bi-arrow-right"></i>
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-credit-card"></i>
+                            <p>No payment history</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== TOAST FUNCTION =====
+        function showToast(message, type = 'info', duration = 4000) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            if (container.children.length >= 3) {
+                container.children[0].remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            let icon = type === 'success' ? 'check-circle' :
+                      type === 'error' ? 'exclamation-circle' :
+                      type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+
+            toast.innerHTML = `
+                <i class="bi bi-${icon}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentElement) toast.remove();
+            }, duration);
+        }
+
+        // ===== PAGE LOADER =====
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                document.getElementById('pageLoader').classList.add('hidden');
+            }, 600);
+        });
+
+        // ===== MODAL FUNCTIONS =====
+        let currentModal = null;
+        let currentUserId = {{ user.id }};
+
+        function showModal(type) {
+            document.getElementById(type + 'Modal').classList.add('active');
+            currentModal = type;
+        }
+
+        function closeModal() {
+            document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+            currentModal = null;
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                closeModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && currentModal) {
+                closeModal();
+            }
+        });
+
+        // ===== API FUNCTIONS =====
+        function resetPassword() {
+            const btn = document.querySelector('#resetModal .btn-primary');
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Sending...';
+            btn.disabled = true;
+
+            fetch(`/admin/user/${currentUserId}/reset-password`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('✅ Password reset email sent', 'success');
+                    closeModal();
+                } else {
+                    showToast('❌ Error: ' + data.message, 'error');
+                    btn.innerHTML = '<i class="bi bi-send"></i> Send Reset Link';
+                    btn.disabled = false;
+                }
+            })
+            .catch(error => {
+                showToast('❌ Error sending reset email', 'error');
+                btn.innerHTML = '<i class="bi bi-send"></i> Send Reset Link';
+                btn.disabled = false;
+            });
+        }
+
+        function toggleAdmin() {
+            const btn = document.querySelector('#adminModal .btn-warning');
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+            btn.disabled = true;
+
+            fetch(`/admin/user/${currentUserId}/toggle-admin`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('✅ Admin status updated', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('❌ Error: ' + data.message, 'error');
+                    btn.innerHTML = '<i class="bi bi-shield"></i> Confirm';
+                    btn.disabled = false;
+                }
+            })
+            .catch(error => {
+                showToast('❌ Error updating admin status', 'error');
+                btn.innerHTML = '<i class="bi bi-shield"></i> Confirm';
+                btn.disabled = false;
+            });
+        }
+
+        function deleteUser() {
+            const btn = document.querySelector('#deleteModal .btn-danger');
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
+            btn.disabled = true;
+
+            fetch(`/admin/user/${currentUserId}/delete`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('✅ User deleted', 'success');
+                    setTimeout(() => {
+                        window.location.href = '{{ url_for("admin_users") }}';
+                    }, 1500);
+                } else {
+                    showToast('❌ Error: ' + data.message, 'error');
+                    btn.innerHTML = '<i class="bi bi-trash"></i> Delete Permanently';
+                    btn.disabled = false;
+                }
+            })
+            .catch(error => {
+                showToast('❌ Error deleting user', 'error');
+                btn.innerHTML = '<i class="bi bi-trash"></i> Delete Permanently';
+                btn.disabled = false;
+            });
+        }
+
+        // ===== FLASH MESSAGES =====
+        document.addEventListener('DOMContentLoaded', function() {
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        setTimeout(() => {
+                            showToast("{{ message|safe }}", "{{ category if category in ['success', 'error', 'warning'] else 'info' }}");
+                        }, {{ loop.index0 * 200 }});
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        });
+    </script>
+</body>
+</html>

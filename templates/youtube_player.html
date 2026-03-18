@@ -1,0 +1,712 @@
+<!-- templates/youtube_player.html - GOLD ON NAVY WITH GLASS MORPHISM -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover">
+    <title>{{ lesson.title }} - myMSCE Player</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="{{ url_for('static', filename='js/history-manager.js') }}"></script>
+
+    <style>
+        /* Gold on Navy with Morphism */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a2b4c;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        /* Subtle grain texture */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.03"/></svg>');
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.15;
+        }
+
+        /* ===== PAGE LOADER ===== */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1a2b4c;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s ease;
+        }
+        .page-loader.hidden { opacity: 0; pointer-events: none; }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(251, 191, 36, 0.1);
+            border-top-color: #fbbf24;
+            border-radius: 50%;
+            animation: spin 0.8s cubic-bezier(0.2, 0.9, 0.3, 1) infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== SKELETON LOADING STATES ===== */
+        .skeleton {
+            background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0.03) 25%,
+                rgba(251, 191, 36, 0.1) 50%,
+                rgba(255, 255, 255, 0.03) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-line {
+            height: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .skeleton-line.w20 { width: 20%; }
+        .skeleton-line.w30 { width: 30%; }
+        .skeleton-line.w40 { width: 40%; }
+        .skeleton-line.w50 { width: 50%; }
+        .skeleton-line.w60 { width: 60%; }
+        .skeleton-line.w70 { width: 70%; }
+        .skeleton-line.w80 { width: 80%; }
+        .skeleton-line.w90 { width: 90%; }
+
+        /* ===== MAIN CONTAINER ===== */
+        .player-wrapper {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* ===== BACK BUTTON ===== */
+        .back-btn {
+            position: absolute;
+            top: -50px;
+            left: 0;
+            width: 44px;
+            height: 44px;
+            background: rgba(30, 58, 95, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fbbf24;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            z-index: 30;
+        }
+        .back-btn:hover {
+            background: #fbbf24;
+            color: #1a2b4c;
+            transform: translateX(-4px);
+        }
+        .back-btn:active { transform: scale(0.95) translateX(-4px); }
+
+        /* ===== PLAYER CARD - GLASS MORPHISM ===== */
+        .player-card {
+            background: rgba(30, 58, 95, 0.3);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 32px;
+            overflow: hidden;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeInUp 0.6s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== YOUTUBE PLAYER CONTAINER ===== */
+        .youtube-player-container {
+            position: relative;
+            background: #000;
+            aspect-ratio: 16 / 9;
+            width: 100%;
+        }
+
+        .youtube-player {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .youtube-player iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* ===== LOADING OVERLAY ===== */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 43, 76, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: opacity 0.3s ease;
+        }
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(251, 191, 36, 0.1);
+            border-top-color: #fbbf24;
+            border-right-color: #fbbf24;
+            border-radius: 50%;
+            animation: spin 1s cubic-bezier(0.2, 0.9, 0.3, 1) infinite;
+        }
+
+        /* ===== ERROR OVERLAY ===== */
+        .error-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 43, 76, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 20;
+        }
+
+        .error-content {
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .error-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            border: 2px solid rgba(239, 68, 68, 0.3);
+        }
+        .error-icon i {
+            font-size: 3rem;
+            color: #ef4444;
+            filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.3));
+        }
+
+        .error-content h3 {
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .error-content p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .error-help {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: left;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+        .error-help h4 {
+            color: #fbbf24;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .error-help ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .error-help li {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            padding: 6px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .error-help li i {
+            color: #fbbf24;
+            font-size: 0.9rem;
+        }
+
+        /* ===== VIDEO INFO BAR ===== */
+        .video-info-bar {
+            background: rgba(26, 43, 76, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 20px 24px;
+            border-top: 1px solid rgba(251, 191, 36, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .video-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .video-title i {
+            color: #fbbf24;
+            font-size: 1.3rem;
+        }
+        .video-title h3 {
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .video-meta {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+        .meta-item i {
+            color: #fbbf24;
+            font-size: 0.95rem;
+        }
+        .free-badge {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        /* ===== VIDEO CONTROLS ===== */
+        .video-controls {
+            display: flex;
+            gap: 8px;
+        }
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+        }
+        .control-btn:hover {
+            background: #fbbf24;
+            color: #1a2b4c;
+            border-color: #fbbf24;
+            transform: translateY(-2px);
+        }
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* ===== SKELETON CARD ===== */
+        .skeleton-card {
+            background: rgba(30, 58, 95, 0.3);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            overflow: hidden;
+            border: 1px solid rgba(251, 191, 36, 0.1);
+            max-width: 1000px;
+            width: 100%;
+        }
+        .skeleton-player {
+            aspect-ratio: 16 / 9;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        .skeleton-bar {
+            padding: 20px 24px;
+            background: rgba(26, 43, 76, 0.3);
+        }
+
+        /* ===== TOAST NOTIFICATIONS ===== */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 0;
+            right: 0;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+            padding: 0 16px;
+        }
+        .toast {
+            background: rgba(26, 43, 76, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-left: 4px solid #fbbf24;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            font-size: 0.9rem;
+            animation: toastIn 0.3s ease;
+            pointer-events: auto;
+            margin-bottom: 8px;
+            max-width: 380px;
+            width: 100%;
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.3);
+        }
+        .toast i { color: #fbbf24; }
+        .toast button {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            margin-left: auto;
+            font-size: 1.1rem;
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .video-info-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 16px 20px;
+            }
+            .video-meta {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .back-btn {
+                top: -40px;
+            }
+            .video-title h3 { font-size: 1rem; }
+        }
+
+        /* ===== SAFE AREAS ===== */
+        @supports (padding: max(0px)) {
+            body {
+                padding-left: max(20px, env(safe-area-inset-left));
+                padding-right: max(20px, env(safe-area-inset-right));
+                padding-top: max(20px, env(safe-area-inset-top));
+                padding-bottom: max(20px, env(safe-area-inset-bottom));
+            }
+        }
+
+        /* ===== YOUTUBE HIDE BRANDING ===== */
+        .youtube-player iframe {
+            border: none;
+        }
+        .ytp-title-channel,
+        .ytp-title-link,
+        .ytp-ce-element,
+        .ytp-paid-content-overlay,
+        .ytp-chrome-top,
+        .ytp-gradient-top {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Loader -->
+    <div class="page-loader" id="pageLoader">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <div class="player-wrapper" id="mainContent">
+        <!-- Skeleton Card (shown initially) -->
+        <div class="skeleton-card" id="skeletonCard">
+            <div class="skeleton-player skeleton"></div>
+            <div class="skeleton-bar">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; gap: 12px;">
+                        <div class="skeleton" style="width: 30px; height: 30px; border-radius: 50%;"></div>
+                        <div class="skeleton-line w40" style="height: 24px;"></div>
+                    </div>
+                    <div style="display: flex; gap: 16px;">
+                        <div class="skeleton-line w20" style="height: 20px;"></div>
+                        <div class="skeleton-line w20" style="height: 20px;"></div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <div class="skeleton" style="width: 40px; height: 40px; border-radius: 30px;"></div>
+                        <div class="skeleton" style="width: 40px; height: 40px; border-radius: 30px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real Content (hidden initially) -->
+        <div id="realCard" style="display: none;">
+            <!-- Back Button -->
+            <a href="javascript:history.back()" class="back-btn">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+
+            <!-- Player Card -->
+            <div class="player-card">
+                <!-- YouTube Player Container -->
+                <div class="youtube-player-container">
+                    <!-- YouTube Player -->
+                    <div id="youtube-player-{{ lesson.id }}" class="youtube-player"></div>
+
+                    <!-- Loading Overlay -->
+                    <div class="loading-overlay" id="loadingOverlay">
+                        <div class="loading-spinner"></div>
+                    </div>
+
+                    <!-- Error Overlay (hidden by default) -->
+                    <div class="error-overlay" id="errorOverlay" style="display: none;">
+                        <div class="error-content">
+                            <div class="error-icon">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                            </div>
+                            <h3>Video Unavailable</h3>
+                            <p>We couldn't load this video. Please try again later.</p>
+                            <div class="error-help">
+                                <h4>
+                                    <i class="bi bi-lightbulb"></i>
+                                    Quick fixes:
+                                </h4>
+                                <ul>
+                                    <li><i class="bi bi-arrow-repeat"></i> Refresh the page</li>
+                                    <li><i class="bi bi-wifi"></i> Check your internet connection</li>
+                                    <li><i class="bi bi-envelope"></i> Contact support if problem persists</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Info Bar -->
+                <div class="video-info-bar">
+                    <div class="video-title">
+                        <i class="bi bi-youtube"></i>
+                        <h3>{{ lesson.title }}</h3>
+                    </div>
+                    <div class="video-meta">
+                        <span class="meta-item">
+                            <i class="bi bi-clock"></i>
+                            {{ lesson.duration }} min
+                        </span>
+                        <span class="meta-item">
+                            <i class="bi bi-book"></i>
+                            {{ lesson.subject.name }}
+                        </span>
+                        {% if lesson.is_free %}
+                        <span class="free-badge">
+                            <i class="bi bi-gift-fill"></i>
+                            Free Sample
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="video-controls">
+                        <button class="control-btn" onclick="window.location.reload()" title="Reload">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </button>
+                        <button class="control-btn" onclick="window.history.back()" title="Go Back">
+                            <i class="bi bi-arrow-left"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        // ===== TOAST FUNCTION =====
+        function showToast(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            if (container.children.length >= 3) {
+                container.children[0].remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            let icon = type === 'success' ? 'check-circle' :
+                      type === 'error' ? 'exclamation-circle' :
+                      type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+
+            toast.innerHTML = `
+                <i class="bi bi-${icon}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentElement) toast.remove();
+            }, duration);
+        }
+
+        // ===== PAGE LOAD SIMULATION =====
+        window.addEventListener('load', function() {
+            // Hide loader after 600ms
+            setTimeout(() => {
+                document.getElementById('pageLoader').classList.add('hidden');
+            }, 600);
+
+            // Show skeleton for 1s, then real content
+            setTimeout(() => {
+                document.getElementById('skeletonCard').style.display = 'none';
+                document.getElementById('realCard').style.display = 'block';
+            }, 1000);
+        });
+
+        // ===== YOUTUBE PLAYER =====
+        var player_{{ lesson.id }};
+        var loadingOverlay = document.getElementById('loadingOverlay');
+        var errorOverlay = document.getElementById('errorOverlay');
+
+        function onYouTubeIframeAPIReady() {
+            player_{{ lesson.id }} = new YT.Player('youtube-player-{{ lesson.id }}', {
+                height: '100%',
+                width: '100%',
+                videoId: '{{ video_id }}',
+                playerVars: {
+                    'autoplay': 0,
+                    'controls': 1,
+                    'disablekb': 1,
+                    'enablejsapi': 1,
+                    'fs': 0,
+                    'iv_load_policy': 3,
+                    'modestbranding': 1,
+                    'rel': 0,
+                    'showinfo': 0,
+                    'color': 'white',
+                    'origin': window.location.origin
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onError': onPlayerError,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            console.log('Player ready');
+            loadingOverlay.classList.add('hidden');
+            setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+            }, 300);
+        }
+
+        function onPlayerError(event) {
+            console.error('Player error:', event.data);
+            loadingOverlay.style.display = 'none';
+            errorOverlay.style.display = 'flex';
+
+            const errorMessages = {
+                2: 'Invalid video ID',
+                5: 'HTML5 player error',
+                100: 'Video not found',
+                101: 'Video embed forbidden',
+                150: 'Video embed forbidden'
+            };
+            showToast(errorMessages[event.data] || 'Video unavailable', 'error');
+        }
+
+        function onPlayerStateChange(event) {
+            // Optional: Track playback for analytics
+            const states = {
+                '-1': 'unstarted',
+                0: 'ended',
+                1: 'playing',
+                2: 'paused',
+                3: 'buffering',
+                5: 'video cued'
+            };
+            console.log('Player state:', states[event.data]);
+        }
+
+        // Clean up
+        window.addEventListener('beforeunload', function() {
+            if (player_{{ lesson.id }}) {
+                player_{{ lesson.id }}.destroy();
+            }
+        });
+    </script>
+</body>
+</html>

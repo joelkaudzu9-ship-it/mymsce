@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>History Test</title>
+    <script src="{{ url_for('static', filename='js/history-manager.js') }}"></script>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #0f172a; color: white; }
+        a { color: #fbbf24; display: block; margin: 10px 0; }
+        button { padding: 10px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>History Test Page</h1>
+    <p>Current path: <span id="path"></span></p>
+    <p>History stack: <span id="stack"></span></p>
+
+    <a href="/dashboard">Go to Dashboard</a>
+    <a href="/pricing">Go to Pricing</a>
+    <a href="/subject/1">Go to Subject</a>
+    <a href="/lesson/1">Go to Lesson</a>
+    <button onclick="showStack()">Show Stack</button>
+    <button onclick="clearStack()">Clear Stack</button>
+
+    <script>
+        function showStack() {
+            const stack = JSON.parse(sessionStorage.getItem('navHistory') || '[]');
+            document.getElementById('stack').textContent = JSON.stringify(stack);
+        }
+
+        function clearStack() {
+            sessionStorage.removeItem('navHistory');
+            document.getElementById('stack').textContent = '[]';
+        }
+
+        document.getElementById('path').textContent = window.location.pathname;
+        showStack();
+    </script>
+</body>
+</html>

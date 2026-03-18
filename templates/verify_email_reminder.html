@@ -1,0 +1,546 @@
+<!-- templates/verify_email_reminder.html - STANDALONE VERIFY EMAIL PAGE WITH DARK THEME -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Verify Email - myMSCE</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Background gradient effects */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: 0;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: -50%;
+            left: -20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: 0;
+            animation: float 15s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(5deg); }
+            66% { transform: translate(-30px, 30px) rotate(-5deg); }
+        }
+
+        /* Main container */
+        .app {
+            max-width: 480px;
+            width: 100%;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Email Card */
+        .email-card {
+            background: #1e293b;
+            border-radius: 32px;
+            padding: 48px 32px;
+            text-align: center;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .email-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #fbbf24, #2563eb, #fbbf24);
+            background-size: 200% 100%;
+            animation: gradientMove 3s linear infinite;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 200% 0%; }
+        }
+
+        /* Envelope Icon */
+        .icon-wrapper {
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        .envelope-icon {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(37, 99, 235, 0.1));
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            border: 2px solid rgba(251, 191, 36, 0.2);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(251, 191, 36, 0); }
+        }
+
+        .envelope-icon i {
+            font-size: 4rem;
+            color: #fbbf24;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Floating dots */
+        .floating-dots {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #fbbf24;
+            border-radius: 50%;
+            opacity: 0.2;
+        }
+
+        .dot:nth-child(1) { top: 20%; left: 20%; animation: float 5s linear infinite; }
+        .dot:nth-child(2) { top: 70%; right: 20%; animation: float 7s linear infinite reverse; }
+        .dot:nth-child(3) { bottom: 30%; left: 30%; animation: float 6s linear infinite; }
+
+        /* Title */
+        h2 {
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        /* Email highlight */
+        .email-highlight {
+            background: linear-gradient(135deg, #0f172a, #1a2538);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(251, 191, 36, 0.1);
+        }
+
+        .email-label {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .email-address {
+            color: #fbbf24;
+            font-size: 1.1rem;
+            font-weight: 600;
+            word-break: break-all;
+            background: #0f172a;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            font-family: monospace;
+        }
+
+        /* Message */
+        .message {
+            color: #94a3b8;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        /* Alert Box */
+        .alert-box {
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            text-align: left;
+        }
+
+        .alert-box i {
+            color: #06b6d4;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .alert-box p {
+            color: #94a3b8;
+            margin: 0;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .alert-box strong {
+            color: #06b6d4;
+        }
+
+        /* Tips */
+        .tips-box {
+            background: #0f172a;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 32px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .tips-title {
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tips-title i {
+            color: #fbbf24;
+        }
+
+        .tip-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .tip-item:last-child {
+            border-bottom: none;
+        }
+
+        .tip-item i {
+            color: #fbbf24;
+            font-size: 0.8rem;
+            width: 20px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 16px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+
+        .btn-primary {
+            background: #fbbf24;
+            color: #0f172a;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            padding: 12px;
+            font-size: 0.95rem;
+        }
+
+        .btn-outline:hover {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+        }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 24px 0;
+            color: #475569;
+        }
+
+        .divider-line {
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .divider-text {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .email-card {
+                padding: 32px 20px;
+            }
+
+            h2 {
+                font-size: 1.6rem;
+            }
+
+            .email-address {
+                font-size: 0.95rem;
+            }
+
+            .alert-box {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        /* Safe areas */
+        @supports (padding: max(0px)) {
+            body {
+                padding-left: max(20px, env(safe-area-inset-left));
+                padding-right: max(20px, env(safe-area-inset-right));
+                padding-top: max(20px, env(safe-area-inset-top));
+                padding-bottom: max(20px, env(safe-area-inset-bottom));
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating dots -->
+    <div class="floating-dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    </div>
+
+    <div class="app">
+        <!-- Email Card -->
+        <div class="email-card">
+            <!-- Envelope Icon -->
+            <div class="icon-wrapper">
+                <div class="envelope-icon">
+                    <i class="bi bi-envelope-fill"></i>
+                </div>
+            </div>
+
+            <!-- Title -->
+            <h2>Verify Your Email</h2>
+
+            <!-- Email Highlight -->
+            <div class="email-highlight">
+                <div class="email-label">Verification sent to</div>
+                <div class="email-address">{{ current_user.email }}</div>
+            </div>
+
+            <!-- Message -->
+            <p class="message">
+                We've sent a verification link to your email address. Please check your inbox and click the link to activate your account.
+            </p>
+
+            <!-- Alert Box -->
+            <div class="alert-box">
+                <i class="bi bi-info-circle-fill"></i>
+                <p>
+                    <strong>Didn't receive the email?</strong> Check your spam folder or click below to resend the verification link.
+                </p>
+            </div>
+
+            <!-- Tips -->
+            <div class="tips-box">
+                <div class="tips-title">
+                    <i class="bi bi-lightbulb"></i>
+                    Quick Tips
+                </div>
+                <div class="tip-item">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Check your spam or junk folder
+                </div>
+                <div class="tip-item">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Add noreply@mymsce.com to your contacts
+                </div>
+                <div class="tip-item">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Wait a few minutes for the email to arrive
+                </div>
+            </div>
+
+            <!-- Resend Button -->
+            <a href="{{ url_for('resend_verification') }}" class="btn btn-primary">
+                <i class="bi bi-envelope"></i>
+                Resend Verification Email
+            </a>
+
+            <!-- Divider -->
+            <div class="divider">
+                <div class="divider-line"></div>
+                <span class="divider-text">or</span>
+                <div class="divider-line"></div>
+            </div>
+
+            <!-- Logout Link -->
+            <a href="{{ url_for('logout') }}" class="btn btn-outline">
+                <i class="bi bi-box-arrow-right"></i>
+                Sign Out
+            </a>
+        </div>
+    </div>
+
+    <!-- Optional: Add email resend countdown timer -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Optional: Add resend cooldown timer
+            const resendBtn = document.querySelector('.btn-primary');
+            if (resendBtn) {
+                let canResend = true;
+                resendBtn.addEventListener('click', function(e) {
+                    if (!canResend) {
+                        e.preventDefault();
+                        showToast('Please wait 60 seconds before resending', 'warning');
+                        return;
+                    }
+
+                    // Disable button for 60 seconds
+                    canResend = false;
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="bi bi-hourglass"></i> Sending...';
+                    this.style.opacity = '0.5';
+                    this.style.pointerEvents = 'none';
+
+                    // Re-enable after 60 seconds
+                    setTimeout(() => {
+                        canResend = true;
+                        this.innerHTML = originalText;
+                        this.style.opacity = '1';
+                        this.style.pointerEvents = 'auto';
+                    }, 60000);
+                });
+            }
+        });
+
+        // Toast notification function (if needed)
+        function showToast(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.style.background = '#1e293b';
+            toast.style.color = 'white';
+            toast.style.padding = '14px 20px';
+            toast.style.borderRadius = '30px';
+            toast.style.boxShadow = '0 15px 30px -8px rgba(0,0,0,0.5)';
+            toast.style.display = 'flex';
+            toast.style.alignItems = 'center';
+            toast.style.gap = '12px';
+            toast.style.minWidth = '280px';
+            toast.style.maxWidth = '380px';
+            toast.style.animation = 'slideIn 0.3s ease';
+            toast.style.pointerEvents = 'auto';
+            toast.style.borderLeft = `4px solid ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#fbbf24'}`;
+
+            let icon = 'info-circle';
+            if (type === 'success') icon = 'check-circle-fill';
+            else if (type === 'error') icon = 'exclamation-circle-fill';
+            else if (type === 'warning') icon = 'exclamation-triangle-fill';
+
+            toast.innerHTML = `
+                <i class="bi bi-${icon}" style="color: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#fbbf24'};"></i>
+                <div style="flex: 1;">${message}</div>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; color: white; cursor: pointer;">✕</button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+    </script>
+</body>
+</html>

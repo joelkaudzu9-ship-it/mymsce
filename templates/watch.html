@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ lesson.title }} - myMSCE Player</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: #1e293b;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid #334155;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #fbbf24;
+            color: #0f172a;
+        }
+
+        .nav-info {
+            flex: 1;
+        }
+
+        .nav-info h1 {
+            font-size: 1.2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-info p {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .badge {
+            background: #fbbf24;
+            color: #0f172a;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Player Container */
+        .player-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: #000;
+        }
+
+        .player-wrapper {
+            width: 100%;
+            max-width: 1280px;
+            aspect-ratio: 16/9;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        #youtube-player {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Progress Bar */
+        .progress-section {
+            background: #1e293b;
+            padding: 1rem 2rem;
+            border-top: 1px solid #334155;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .progress-percent {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #334155;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #fbbf24, #2563eb);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .complete-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            width: fit-content;
+        }
+
+        .complete-toggle input {
+            display: none;
+        }
+
+        .toggle-slider {
+            width: 48px;
+            height: 24px;
+            background: #334155;
+            border-radius: 100px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s;
+        }
+
+        .complete-toggle input:checked + .toggle-slider {
+            background: #10b981;
+        }
+
+        .complete-toggle input:checked + .toggle-slider::before {
+            transform: translateX(24px);
+        }
+
+        .toggle-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        /* Lesson Info */
+        .lesson-info {
+            background: #0f172a;
+            padding: 1.5rem 2rem;
+            border-top: 1px solid #334155;
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .info-item i {
+            color: #fbbf24;
+        }
+
+        .info-item strong {
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Navigation */
+        .lesson-nav {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            background: #1e293b;
+            border-top: 1px solid #334155;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1.5rem;
+            background: #334155;
+            border-radius: 12px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.2s;
+            max-width: 300px;
+        }
+
+        .nav-btn:hover {
+            background: #fbbf24;
+            color: #0f172a;
+        }
+
+        .nav-btn.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .nav-info-small {
+            flex: 1;
+        }
+
+        .nav-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .nav-btn:hover .nav-label {
+            color: #0f172a;
+        }
+
+        .nav-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem;
+            }
+
+            .player-container {
+                padding: 1rem;
+            }
+
+            .lesson-info {
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            .lesson-nav {
+                padding: 1rem;
+            }
+
+            .nav-btn {
+                padding: 0.5rem 1rem;
+                max-width: 45%;
+            }
+
+            .nav-title {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <div class="navbar">
+        <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="back-btn">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div class="nav-info">
+            <h1>{{ lesson.title }}</h1>
+            <p>{{ lesson.subject.name }} • Form {{ lesson.form }}</p>
+        </div>
+        {% if lesson.is_free %}
+        <span class="badge">
+            <i class="bi bi-gift-fill"></i> Free Sample
+        </span>
+        {% endif %}
+    </div>
+
+    <!-- Player -->
+    <div class="player-container">
+        <div class="player-wrapper">
+            <div id="youtube-player"></div>
+        </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-section">
+        <div class="progress-info">
+            <span class="progress-label">Your progress</span>
+            <span class="progress-percent" id="progressPercentage">0%</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar" style="width: 0%;"></div>
+        </div>
+
+        <label class="complete-toggle">
+            <input type="checkbox" id="markComplete">
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">
+                <i class="bi bi-check-circle"></i> Mark as completed
+            </span>
+        </label>
+    </div>
+
+    <!-- Lesson Info -->
+    <div class="lesson-info">
+        <div class="info-item">
+            <i class="bi bi-clock"></i>
+            <span>Duration: <strong>{{ lesson.duration }} min</strong></span>
+        </div>
+        <div class="info-item">
+            <i class="bi bi-calendar"></i>
+            <span>Added: <strong>{{ lesson.created_at.strftime('%d %b %Y') }}</strong></span>
+        </div>
+        {% if lesson.description %}
+        <div class="info-item" style="flex: 1;">
+            <i class="bi bi-info-circle"></i>
+            <span>{{ lesson.description }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Navigation -->
+    <div class="lesson-nav">
+        {% if prev_lesson %}
+        <a href="{{ url_for('watch_lesson', lesson_id=prev_lesson.id) }}" class="nav-btn">
+            <i class="bi bi-chevron-left"></i>
+            <div class="nav-info-small">
+                <div class="nav-label">Previous</div>
+                <div class="nav-title">{{ prev_lesson.title|truncate(20) }}</div>
+            </div>
+        </a>
+        {% else %}
+        <div class="nav-btn disabled">
+            <i class="bi bi-chevron-left"></i>
+            <div class="nav-info-small">
+                <div class="nav-label">First Lesson</div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if next_lesson %}
+        <a href="{{ url_for('watch_lesson', lesson_id=next_lesson.id) }}" class="nav-btn" style="justify-content: flex-end;">
+            <div class="nav-info-small" style="text-align: right;">
+                <div class="nav-label">Next</div>
+                <div class="nav-title">{{ next_lesson.title|truncate(20) }}</div>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+        </a>
+        {% else %}
+        <div class="nav-btn disabled" style="justify-content: flex-end;">
+            <div class="nav-info-small" style="text-align: right;">
+                <div class="nav-label">Course Complete!</div>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- YouTube API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <!-- Progress Tracking -->
+    <script>
+        let player;
+        let progressInterval;
+        let lastSavedTime = 0;
+        const lessonId = {{ lesson.id }};
+        const duration = {{ lesson.duration * 60 }};
+
+        // Load saved progress
+        fetch(`/api/lesson/${lessonId}/progress`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.watch_time > 0) {
+                    lastSavedTime = data.watch_time;
+                    updateProgressBar(data.progress);
+                }
+            });
+
+        // YouTube API
+        window.onYouTubeIframeAPIReady = function() {
+            player = new YT.Player('youtube-player', {
+                videoId: '{{ video_id }}',
+                playerVars: {
+                    'rel': 0,
+                    'modestbranding': 1,
+                    'autoplay': 0
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        };
+
+        function onPlayerReady(event) {
+            if (lastSavedTime > 0) {
+                player.seekTo(lastSavedTime);
+            }
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                startProgressTracking();
+            } else if (event.data === YT.PlayerState.ENDED) {
+                markComplete();
+            }
+        }
+
+        function startProgressTracking() {
+            if (progressInterval) clearInterval(progressInterval);
+
+            progressInterval = setInterval(() => {
+                if (player && player.getCurrentTime) {
+                    const currentTime = Math.floor(player.getCurrentTime());
+
+                    if (currentTime !== lastSavedTime) {
+                        saveProgress(currentTime);
+                        lastSavedTime = currentTime;
+                    }
+                }
+            }, 5000);
+        }
+
+        function saveProgress(currentTime) {
+            fetch(`/api/lesson/${lessonId}/progress`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    watch_time: currentTime,
+                    duration: duration
+                })
+            })
+            .then(response => response.json())
+            .then(data => updateProgressBar(data.progress));
+        }
+
+        function markComplete() {
+            fetch(`/api/lesson/${lessonId}/progress`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    watch_time: duration,
+                    duration: duration,
+                    completed: true
+                })
+            })
+            .then(() => {
+                document.getElementById('markComplete').checked = true;
+                updateProgressBar(100);
+            });
+        }
+
+        function updateProgressBar(percent) {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressPercentage').textContent = percent + '%';
+        }
+
+        // Mark complete checkbox
+        document.getElementById('markComplete').addEventListener('change', function(e) {
+            if (e.target.checked) {
+                markComplete();
+            }
+        });
+    </script>
+</body>
+</html>

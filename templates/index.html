@@ -1,0 +1,870 @@
+<!-- templates/index.html - POLISHED WELCOME SCREEN WITH SWIPEABLE FEATURES -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover">
+    <title>Welcome to myMSCE</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="{{ url_for('static', filename='js/history-manager.js') }}"></script>
+
+    <style>
+        /* Gold on Navy with Morphism */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a2b4c; /* Light navy base */
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: fixed;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Subtle grain texture */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.03"/></svg>');
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.15;
+        }
+
+        /* ===== PAGE LOADER ===== */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1a2b4c;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+        .page-loader.hidden { opacity: 0; pointer-events: none; }
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(251, 191, 36, 0.1);
+            border-top-color: #fbbf24;
+            border-right-color: #fbbf24;
+            border-radius: 50%;
+            animation: spin 1s cubic-bezier(0.2, 0.9, 0.3, 1) infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== SKELETON LOADING STATES ===== */
+        .skeleton {
+            background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0.03) 25%,
+                rgba(251, 191, 36, 0.1) 50%,
+                rgba(255, 255, 255, 0.03) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 12px;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            margin: 0 auto 30px;
+        }
+
+        .skeleton-line {
+            height: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+        .skeleton-line.w30 { width: 30%; }
+        .skeleton-line.w50 { width: 50%; }
+        .skeleton-line.w70 { width: 70%; }
+        .skeleton-line.w90 { width: 90%; }
+
+        /* ===== BACKGROUND ===== */
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .background img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            opacity: 0;
+            transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .background img.loaded {
+            opacity: 0.2;
+        }
+
+        .background-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(26, 43, 76, 0.9) 0%, rgba(37, 99, 235, 0.7) 100%);
+            z-index: 1;
+        }
+
+        /* ===== MAIN CONTAINER ===== */
+        .app {
+            position: relative;
+            z-index: 10;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 24px 40px;
+            color: white;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ===== SKIP BUTTON ===== */
+        .skip-btn {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 8px 20px;
+            border-radius: 40px;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            transition: all 0.2s;
+            z-index: 20;
+        }
+
+        .skip-btn:hover {
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+            border-color: #fbbf24;
+        }
+
+        .skip-btn:active { transform: scale(0.97); }
+
+        /* ===== CONTENT ===== */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* ===== SWIPE CONTAINER ===== */
+        .swipe-container {
+            width: 100%;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .slides-wrapper {
+            display: flex;
+            transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+        }
+
+        .slide {
+            flex: 0 0 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ===== ILLUSTRATION ===== */
+        .illustration {
+            width: 100%;
+            max-width: 280px;
+            margin-bottom: 30px;
+            animation: float 3s ease-in-out infinite;
+            filter: drop-shadow(0 15px 20px rgba(0,0,0,0.3));
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .celebration-svg {
+            width: 100%;
+            height: auto;
+        }
+
+        /* ===== TYPOGRAPHY ===== */
+        .welcome-header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .welcome-header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .welcome-header .highlight {
+            background: linear-gradient(135deg, #fbbf24, #2563eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .description {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            font-size: 1rem;
+            line-height: 1.6;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+
+        /* ===== FEATURES GRID ===== */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .feature-item {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 20px 12px;
+            text-align: center;
+            border: 1px solid rgba(251, 191, 36, 0.1);
+            transition: all 0.3s;
+        }
+
+        .feature-item:hover {
+            transform: translateY(-4px);
+            border-color: #fbbf24;
+            background: rgba(251, 191, 36, 0.05);
+        }
+
+        .feature-item i {
+            font-size: 2.2rem;
+            color: #fbbf24;
+            margin-bottom: 8px;
+        }
+
+        .feature-item span {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: white;
+        }
+
+        .feature-item small {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* ===== STATS GRID ===== */
+        .stats-grid {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 24px 8px;
+            text-align: center;
+            border: 1px solid rgba(251, 191, 36, 0.1);
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: #fbbf24;
+        }
+
+        .stat-number {
+            display: block;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #fbbf24;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== PROGRESS DOTS ===== */
+        .progress-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 20px 0;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.2);
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+            cursor: pointer;
+        }
+
+        .dot:hover {
+            background: rgba(251, 191, 36, 0.5);
+        }
+
+        .dot.active {
+            width: 24px;
+            background: #fbbf24;
+        }
+
+        /* ===== SWIPE HINT ===== */
+        .swipe-hint {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: rgba(255,255,255,0.3);
+            font-size: 0.8rem;
+            margin-bottom: 20px;
+            transition: opacity 0.3s;
+        }
+
+        .swipe-hint i {
+            color: #fbbf24;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .swipe-hint.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* ===== CTA BUTTON ===== */
+        .get-started-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 18px 32px;
+            background: #fbbf24;
+            border: none;
+            border-radius: 50px;
+            color: #1a2b4c;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+            box-shadow: 0 10px 25px -5px rgba(251, 191, 36, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .get-started-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(37, 99, 235, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .get-started-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .get-started-btn:hover {
+            background: #2563eb;
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 20px 30px -8px rgba(37,99,235,0.4);
+        }
+
+        .get-started-btn:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        /* ===== LOGIN LINK ===== */
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.9rem;
+        }
+
+        .login-link a {
+            color: #fbbf24;
+            text-decoration: none;
+            font-weight: 600;
+            margin-left: 4px;
+            transition: all 0.2s;
+        }
+
+        .login-link a:hover {
+            color: white;
+        }
+
+        .login-link a:active { opacity: 0.8; }
+
+        /* ===== TOAST NOTIFICATIONS ===== */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 0;
+            right: 0;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+            padding: 0 16px;
+        }
+
+        .toast {
+            background: rgba(26, 43, 76, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-left: 4px solid #fbbf24;
+            padding: 14px 20px;
+            border-radius: 60px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+            width: 100%;
+            max-width: 380px;
+            animation: toastIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.4);
+            font-weight: 500;
+            pointer-events: auto;
+        }
+
+        .toast.success { border-left-color: #10b981; }
+        .toast.error { border-left-color: #ef4444; }
+        .toast.warning { border-left-color: #f59e0b; }
+        .toast i { font-size: 1.2rem; }
+        .toast.success i { color: #10b981; }
+        .toast.error i { color: #ef4444; }
+        .toast.warning i { color: #f59e0b; }
+        .toast.info i { color: #fbbf24; }
+
+        .toast button {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            font-size: 1.2rem;
+            margin-left: auto;
+            transition: color 0.2s;
+        }
+        .toast button:hover { color: white; }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ===== SAFE AREAS ===== */
+        @supports (padding: max(0px)) {
+            .app {
+                padding-left: max(24px, env(safe-area-inset-left));
+                padding-right: max(24px, env(safe-area-inset-right));
+                padding-top: max(24px, env(safe-area-inset-top));
+                padding-bottom: max(40px, env(safe-area-inset-bottom));
+            }
+            .toast-container {
+                top: max(20px, env(safe-area-inset-top));
+            }
+        }
+
+        .hide {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Loader -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Background Image -->
+    <div class="background">
+        <img src="{{ url_for('static', filename='images/student-studying.jpg') }}"
+             alt=""
+             class="lazy-image"
+             onload="this.classList.add('loaded')"
+             onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #1a2b4c, #1e3a5f)';">
+        <div class="background-overlay"></div>
+    </div>
+
+    <div class="app">
+        <!-- Skip button -->
+        <a href="{{ url_for('login') }}" class="skip-btn">Skip</a>
+
+        <!-- Main Content with Skeleton -->
+        <div class="content">
+            <!-- Skeleton Content (shown initially) -->
+            <div id="skeletonContent">
+                <div class="skeleton-circle"></div>
+                <div class="skeleton-line w70" style="height: 50px; margin: 0 auto 12px;"></div>
+                <div class="skeleton-line w50" style="height: 20px; margin: 0 auto 20px;"></div>
+                <div class="skeleton-line w90" style="height: 50px; border-radius: 50px;"></div>
+            </div>
+
+            <!-- Real Content (hidden initially) -->
+            <div id="realContent" style="display: none;">
+                <!-- Swipe Container -->
+                <div class="swipe-container">
+                    <div class="slides-wrapper" id="slidesWrapper">
+                        <!-- Slide 1: Welcome -->
+                        <div class="slide">
+                            <div class="illustration">
+                                <svg class="celebration-svg" viewBox="0 0 300 200" fill="none">
+                                    <!-- Person 1 - blue -->
+                                    <circle cx="100" cy="120" r="25" fill="#2563EB" opacity="0.9"/>
+                                    <circle cx="100" cy="85" r="18" fill="#2563EB"/>
+                                    <rect x="92" y="140" width="16" height="40" fill="#1E40AF" rx="8"/>
+                                    <rect x="70" y="120" width="16" height="30" fill="#1E40AF" rx="8" transform="rotate(-20 70 120)"/>
+                                    <rect x="114" y="120" width="16" height="30" fill="#1E40AF" rx="8" transform="rotate(20 114 120)"/>
+
+                                    <!-- Person 2 - purple -->
+                                    <circle cx="180" cy="100" r="25" fill="#7C3AED" opacity="0.9"/>
+                                    <circle cx="180" cy="65" r="18" fill="#7C3AED"/>
+                                    <rect x="172" y="120" width="16" height="40" fill="#5B21B6" rx="8"/>
+                                    <rect x="150" y="100" width="16" height="30" fill="#5B21B6" rx="8" transform="rotate(-20 150 100)"/>
+                                    <rect x="194" y="100" width="16" height="30" fill="#5B21B6" rx="8" transform="rotate(20 194 100)"/>
+
+                                    <!-- Person 3 - orange -->
+                                    <circle cx="140" cy="80" r="25" fill="#F59E0B" opacity="0.9"/>
+                                    <circle cx="140" cy="45" r="18" fill="#F59E0B"/>
+                                    <rect x="132" y="100" width="16" height="40" fill="#B45309" rx="8"/>
+                                    <rect x="110" y="80" width="16" height="30" fill="#B45309" rx="8" transform="rotate(-20 110 80)"/>
+                                    <rect x="154" y="80" width="16" height="30" fill="#B45309" rx="8" transform="rotate(20 154 80)"/>
+
+                                    <!-- Gold Confetti -->
+                                    <circle cx="50" cy="50" r="4" fill="#fbbf24"/>
+                                    <circle cx="260" cy="60" r="4" fill="#fbbf24"/>
+                                    <circle cx="280" cy="140" r="4" fill="#fbbf24"/>
+                                </svg>
+                            </div>
+                            <div class="welcome-header">
+                                <h1>
+                                    WELCOME
+                                    <span class="highlight">TO</span>
+                                    myMSCE
+                                </h1>
+                            </div>
+                            <div class="description">
+                                Your ultimate MSCE preparation platform. Join thousands of successful students.
+                            </div>
+                        </div>
+
+                        <!-- Slide 2: Features -->
+                        <div class="slide">
+                            <div class="features-grid">
+                                <div class="feature-item">
+                                    <i class="bi bi-camera-reel-fill"></i>
+                                    <span>500+ Videos</span>
+                                    <small>Form 3 & 4</small>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="bi bi-journal-text"></i>
+                                    <span>Past Papers</span>
+                                    <small>With solutions</small>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="bi bi-phone-fill"></i>
+                                    <span>Mobile Money</span>
+                                    <small>Airtel, TNM</small>
+                                </div>
+                                <div class="feature-item">
+                                    <i class="bi bi-star-fill"></i>
+                                    <span>Free Samples</span>
+                                    <small>Try first</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide 3: Stats -->
+                        <div class="slide">
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <span class="stat-number">10k+</span>
+                                    <span class="stat-label">Students</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-number">98%</span>
+                                    <span class="stat-label">Pass Rate</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-number">24/7</span>
+                                    <span class="stat-label">Access</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Dots -->
+                <div class="progress-dots" id="progressDots">
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+
+                <!-- Swipe Hint -->
+                <div class="swipe-hint" id="swipeHint">
+                    <i class="bi bi-chevron-left"></i>
+                    <span>Swipe to explore</span>
+                    <i class="bi bi-chevron-right"></i>
+                </div>
+
+                <!-- CTA Button -->
+                <a href="{{ url_for('register') }}" class="get-started-btn">
+                    GET STARTED
+                </a>
+
+                <!-- Login Link -->
+                <div class="login-link">
+                    Already have an account?
+                    <a href="{{ url_for('login') }}">Sign in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== TOAST FUNCTION =====
+        function showToast(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            if (container.children.length >= 3) {
+                container.children[0].remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            let icon = 'info-circle';
+            if (type === 'success') icon = 'check-circle';
+            else if (type === 'error') icon = 'exclamation-circle';
+            else if (type === 'warning') icon = 'exclamation-triangle';
+
+            toast.innerHTML = `
+                <i class="bi bi-${icon}-fill"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()">✕</button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-20px)';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, duration);
+        }
+
+        // ===== PAGE LOADER & SKELETON =====
+        window.addEventListener('load', function() {
+            // Hide loader after 800ms
+            setTimeout(() => {
+                document.getElementById('pageLoader').classList.add('hidden');
+            }, 800);
+
+            // Show skeleton for 1s, then real content
+            setTimeout(() => {
+                document.getElementById('skeletonContent').style.display = 'none';
+                document.getElementById('realContent').style.display = 'block';
+
+                // Initialize swipe after content is shown
+                setTimeout(initSwipe, 100);
+            }, 1000);
+        });
+
+        // ===== SWIPE FUNCTIONALITY =====
+        function initSwipe() {
+            const slidesWrapper = document.getElementById('slidesWrapper');
+            const dots = document.querySelectorAll('.dot');
+            const swipeHint = document.getElementById('swipeHint');
+            const slides = document.querySelectorAll('.slide');
+
+            if (!slidesWrapper || !slides.length) return;
+
+            let currentIndex = 0;
+            let startX = 0;
+            let isDragging = false;
+
+            function updateDots(index) {
+                dots.forEach((dot, i) => {
+                    dot.classList.toggle('active', i === index);
+                });
+                if (index > 0 && swipeHint) {
+                    swipeHint.classList.add('hide');
+                }
+            }
+
+            function goToSlide(index) {
+                if (index < 0 || index >= slides.length) return;
+                currentIndex = index;
+                slidesWrapper.style.transform = `translateX(-${index * 100}%)`;
+                updateDots(index);
+            }
+
+            // Touch events
+            slidesWrapper.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                isDragging = true;
+                slidesWrapper.style.transition = 'none';
+            }, { passive: true });
+
+            slidesWrapper.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+
+                const currentX = e.touches[0].clientX;
+                const diff = ((currentX - startX) / window.innerWidth) * 100;
+
+                if ((currentIndex === 0 && diff > 0) || (currentIndex === slides.length - 1 && diff < 0)) {
+                    slidesWrapper.style.transform = `translateX(-${currentIndex * 100 + diff * 0.2}%)`;
+                } else {
+                    slidesWrapper.style.transform = `translateX(-${currentIndex * 100 - diff}%)`;
+                }
+            }, { passive: false });
+
+            slidesWrapper.addEventListener('touchend', (e) => {
+                if (!isDragging) return;
+
+                isDragging = false;
+                slidesWrapper.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1)';
+
+                const currentX = e.changedTouches[0].clientX;
+                const diff = ((currentX - startX) / window.innerWidth) * 100;
+                const threshold = 15;
+
+                if (Math.abs(diff) > threshold) {
+                    if (diff < 0 && currentIndex < slides.length - 1) {
+                        goToSlide(currentIndex + 1);
+                    } else if (diff > 0 && currentIndex > 0) {
+                        goToSlide(currentIndex - 1);
+                    } else {
+                        goToSlide(currentIndex);
+                    }
+                } else {
+                    goToSlide(currentIndex);
+                }
+            });
+
+            // Dot click navigation
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    goToSlide(index);
+                    if (swipeHint) swipeHint.classList.add('hide');
+                });
+            });
+
+            // Auto-hide swipe hint
+            setTimeout(() => {
+                if (swipeHint && currentIndex === 0) {
+                    swipeHint.style.opacity = '0';
+                    setTimeout(() => {
+                        swipeHint.style.display = 'none';
+                    }, 300);
+                }
+            }, 4000);
+        }
+
+        // ===== FLASH MESSAGES =====
+        document.addEventListener('DOMContentLoaded', function() {
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        setTimeout(() => {
+                            showToast("{{ message|safe }}", "{{ category if category in ['success', 'error', 'warning'] else 'info' }}");
+                        }, {{ (loop.index0 * 200) + 1200 }});
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        });
+
+        // Image loading
+        document.querySelectorAll('img').forEach(img => {
+            if (img.complete) {
+                img.classList.add('loaded');
+            }
+        });
+    </script>
+</body>
+</html>

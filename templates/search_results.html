@@ -1,0 +1,551 @@
+<!-- templates/search_results.html - Dedicated search results page -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Search Results - "{{ query }}" - myMSCE</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="{{ url_for('static', filename='js/history-manager.js') }}"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #F8FAFC;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: #0f172a;
+            color: white;
+            padding: 20px 24px;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.3);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .greeting h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .greeting .highlight {
+            background: linear-gradient(135deg, #60a5fa, #2563eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 16px;
+        }
+
+        .header-icons i {
+            font-size: 1.4rem;
+            color: #fbbf24;
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .header-icons i:active {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .back-link {
+            color: white;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .back-link i {
+            transition: transform 0.2s ease;
+        }
+
+        .back-link:active i {
+            transform: translateX(-4px);
+        }
+
+        /* Search Summary */
+        .search-summary {
+            margin-bottom: 24px;
+            font-size: 0.95rem;
+            color: #64748b;
+        }
+
+        .search-summary strong {
+            color: #0f172a;
+        }
+
+        /* Results Sections */
+        .results-section {
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .section-title i {
+            font-size: 1.3rem;
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+            padding: 8px;
+            border-radius: 12px;
+        }
+
+        .section-title h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .section-title span {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-left: auto;
+        }
+
+        /* Subjects Grid */
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .subject-card {
+            background: white;
+            border-radius: 20px;
+            padding: 16px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px -5px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+
+        .subject-card:active {
+            transform: translateX(5px);
+            background: #F8FAFC;
+        }
+
+        .subject-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(251, 191, 36, 0.1);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .subject-icon i {
+            font-size: 1.5rem;
+            color: #fbbf24;
+        }
+
+        .subject-info h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 2px;
+        }
+
+        .subject-info p {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .subject-form {
+            background: #fbbf24;
+            color: #0f172a;
+            padding: 4px 8px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+
+        /* Lessons Grid */
+        .lessons-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .lesson-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px -5px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+
+        .lesson-card:active {
+            transform: translateX(5px);
+            background: #F8FAFC;
+        }
+
+        .lesson-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(251, 191, 36, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lesson-icon i {
+            font-size: 1.5rem;
+            color: #fbbf24;
+        }
+
+        .lesson-info {
+            flex: 1;
+        }
+
+        .lesson-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .lesson-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .lesson-meta i {
+            font-size: 0.8rem;
+        }
+
+        .lesson-badge {
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+            padding: 2px 8px;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: #cbd5e1;
+            margin-bottom: 16px;
+        }
+
+        .empty-state p {
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        .empty-state .btn {
+            background: #fbbf24;
+            color: #0f172a;
+            padding: 12px 24px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+
+        .empty-state .btn:active {
+            background: #f59e0b;
+            transform: translateY(-2px);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 30px 24px 80px;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 12px 24px 24px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.03);
+            border-top: 1px solid #E2E8F0;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: rgba(15,23,42,0.4);
+            transition: all 0.2s ease;
+            gap: 4px;
+            background: none;
+            border: none;
+            font-family: inherit;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+
+        .nav-item i {
+            font-size: 1.5rem;
+        }
+
+        .nav-item span {
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .nav-item.active {
+            color: #fbbf24;
+        }
+
+        .nav-item:active {
+            color: #2563eb;
+        }
+
+        @media (max-width: 380px) {
+            .subjects-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @supports (padding: max(0px)) {
+            .bottom-nav {
+                padding-bottom: max(24px, env(safe-area-inset-bottom));
+            }
+            .main-content {
+                padding-bottom: max(80px, env(safe-area-inset-bottom));
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-top">
+            <div class="greeting">
+                <h1>Search <span class="highlight">Results</span></h1>
+            </div>
+            <div class="header-icons">
+                <i class="bi bi-bell" onclick="showToast('No new notifications', 'info')"></i>
+            </div>
+        </div>
+
+        <!-- Back Link -->
+        <a href="{{ url_for('dashboard') }}" class="back-link">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Search Summary -->
+        <div class="search-summary">
+            Showing results for "<strong>{{ query }}</strong>" • {{ total_results }} results found
+        </div>
+
+        <!-- Subjects Results -->
+        {% if subjects %}
+        <div class="results-section">
+            <div class="section-title">
+                <i class="bi bi-book-fill"></i>
+                <h2>Subjects</h2>
+                <span>{{ subjects|length }} found</span>
+            </div>
+
+            <div class="subjects-grid">
+                {% for subject in subjects %}
+                <a href="{{ url_for('view_subject', subject_id=subject.id) }}" class="subject-card">
+                    <div class="subject-icon">
+                        <i class="bi bi-{{ subject.icon }}"></i>
+                    </div>
+                    <div class="subject-info">
+                        <h4>{{ subject.name }}</h4>
+                        <p>Form {{ subject.form }} • {{ subject.lesson_count }} lessons</p>
+                    </div>
+                    <span class="subject-form">F{{ subject.form }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Lessons Results -->
+        {% if lessons %}
+        <div class="results-section">
+            <div class="section-title">
+                <i class="bi bi-play-circle-fill"></i>
+                <h2>Lessons</h2>
+                <span>{{ lessons|length }} found</span>
+            </div>
+
+            <div class="lessons-grid">
+                {% for lesson in lessons %}
+                <a href="{{ url_for('view_lesson', lesson_id=lesson.id) }}" class="lesson-card">
+                    <div class="lesson-icon">
+                        <i class="bi bi-{% if lesson.content_type == 'video' %}camera-reel{% elif lesson.content_type == 'audio' %}mic{% else %}file-text{% endif %}"></i>
+                    </div>
+                    <div class="lesson-info">
+                        <div class="lesson-title">{{ lesson.title }}</div>
+                        <div class="lesson-meta">
+                            <span><i class="bi bi-book"></i> {{ lesson.subject.name }} (Form {{ lesson.form }})</span>
+                            <span><i class="bi bi-clock"></i> {{ lesson.duration }} min</span>
+                            {% if lesson.is_free %}
+                            <span class="lesson-badge"><i class="bi bi-gift-fill"></i> FREE</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- No Results -->
+        {% if not subjects and not lessons %}
+        <div class="empty-state">
+            <i class="bi bi-search"></i>
+            <p>No results found for "{{ query }}"</p>
+            <a href="{{ url_for('dashboard') }}" class="btn">Back to Dashboard</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="{{ url_for('dashboard') }}" class="nav-item active">
+            <i class="bi bi-house-fill"></i>
+            <span>Home</span>
+        </a>
+        <a href="{{ url_for('pricing') }}" class="nav-item">
+            <i class="bi bi-tags-fill"></i>
+            <span>Plans</span>
+        </a>
+        <a href="{{ url_for('user_menu') }}" class="nav-item">
+            <i class="bi bi-person-fill"></i>
+            <span>Profile</span>
+        </a>
+        <form method="POST" action="{{ url_for('logout') }}" style="display: contents;">
+            <button type="submit" class="nav-item">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Logout</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; pointer-events: none;"></div>
+
+    <script>
+        function showToast(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.style.background = 'white';
+            toast.style.color = '#0f172a';
+            toast.style.padding = '14px 20px';
+            toast.style.borderRadius = '30px';
+            toast.style.boxShadow = '0 15px 30px -8px rgba(0,0,0,0.15)';
+            toast.style.display = 'flex';
+            toast.style.alignItems = 'center';
+            toast.style.gap = '12px';
+            toast.style.minWidth = '280px';
+            toast.style.maxWidth = '380px';
+            toast.style.animation = 'slideIn 0.3s ease';
+            toast.style.pointerEvents = 'auto';
+            toast.style.borderLeft = '4px solid #fbbf24';
+
+            if (type === 'success') toast.style.borderLeftColor = '#10B981';
+            else if (type === 'error') toast.style.borderLeftColor = '#EF4444';
+            else if (type === 'warning') toast.style.borderLeftColor = '#F59E0B';
+
+            let icon = 'info-circle-fill';
+            if (type === 'success') icon = 'check-circle-fill';
+            else if (type === 'error') icon = 'exclamation-circle-fill';
+            else if (type === 'warning') icon = 'exclamation-triangle-fill';
+
+            toast.innerHTML = `
+                <i class="bi bi-${icon}"></i>
+                <div style="flex: 1;">${message}</div>
+                <button onclick="this.parentElement.style.animation='slideOut 0.3s ease forwards'; setTimeout(() => this.parentElement.remove(), 300)" style="background: none; border: none; cursor: pointer; font-size: 1.2rem;">✕</button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

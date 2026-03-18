@@ -1,0 +1,201 @@
+<!-- templates/user_menu.html -->
+{% extends "base.html" %}
+
+{% block title %}My Account{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header with Back Button -->
+    <div class="d-flex align-items-center mb-4">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary rounded-circle p-2 me-3" style="width: 40px; height: 40px;">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">My Account</h1>
+    </div>
+
+    <!-- User Profile Summary Card -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center">
+                <div class="bg-primary bg-gradient rounded-3 p-3 me-3" style="width: 60px; height: 60px;">
+                    <i class="bi bi-person-circle text-white fs-1"></i>
+                </div>
+                <div>
+                    <h5 class="mb-1">{{ current_user.username }}</h5>
+                    <p class="text-muted mb-1">{{ current_user.email }}</p>
+                    {% if current_user.is_active_subscriber %}
+                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
+                            <i class="bi bi-star-fill me-1"></i>
+                            {{ current_user.subscription_form|upper }} Plan
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">
+                            <i class="bi bi-star me-1"></i>
+                            No Active Plan
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Grid -->
+    <div class="row g-3">
+        <!-- Profile Option -->
+        <div class="col-6 col-md-4">
+            <a href="{{ url_for('profile') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100">
+                    <div class="bg-primary bg-opacity-10 rounded-3 p-3 mb-2 mx-auto" style="width: fit-content;">
+                        <i class="bi bi-person text-primary fs-2"></i>
+                    </div>
+                    <h6 class="mb-1">My Profile</h6>
+                    <small class="text-muted">View & edit profile</small>
+                </div>
+            </a>
+        </div>
+
+        <!-- My Lessons Option -->
+        <div class="col-6 col-md-4">
+            <a href="{{ url_for('dashboard') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100">
+                    <div class="bg-success bg-opacity-10 rounded-3 p-3 mb-2 mx-auto" style="width: fit-content;">
+                        <i class="bi bi-play-circle text-success fs-2"></i>
+                    </div>
+                    <h6 class="mb-1">My Lessons</h6>
+                    <small class="text-muted">Continue learning</small>
+                </div>
+            </a>
+        </div>
+
+        <!-- Subscription Option -->
+        <div class="col-6 col-md-4">
+            <a href="{{ url_for('pricing') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100">
+                    <div class="bg-warning bg-opacity-10 rounded-3 p-3 mb-2 mx-auto" style="width: fit-content;">
+                        <i class="bi bi-star text-warning fs-2"></i>
+                    </div>
+                    <h6 class="mb-1">Subscription</h6>
+                    <small class="text-muted">Manage your plan</small>
+                </div>
+            </a>
+        </div>
+
+        <!-- Payment History -->
+        <div class="col-6 col-md-4">
+            <a href="{{ url_for('profile') }}#payments" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100">
+                    <div class="bg-info bg-opacity-10 rounded-3 p-3 mb-2 mx-auto" style="width: fit-content;">
+                        <i class="bi bi-credit-card text-info fs-2"></i>
+                    </div>
+                    <h6 class="mb-1">Payments</h6>
+                    <small class="text-muted">Transaction history</small>
+                </div>
+            </a>
+        </div>
+
+        <!-- Settings -->
+        <div class="col-6 col-md-4">
+            <a href="#" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100">
+                    <div class="bg-secondary bg-opacity-10 rounded-3 p-3 mb-2 mx-auto" style="width: fit-content;">
+                        <i class="bi bi-gear text-secondary fs-2"></i>
+                    </div>
+                    <h6 class="mb-1">Settings</h6>
+                    <small class="text-muted">Account settings</small>
+                </div>
+            </a>
+        </div>
+
+        <!-- Help & Support -->
+        <div class="col-6 col-md-4">
+            <a href="#" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100">
+                    <div class="bg-danger bg-opacity-10 rounded-3 p-3 mb-2 mx-auto" style="width: fit-content;">
+                        <i class="bi bi-question-circle text-danger fs-2"></i>
+                    </div>
+                    <h6 class="mb-1">Help</h6>
+                    <small class="text-muted">Support & FAQs</small>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Admin Section (Only visible to admins) -->
+    {% if current_user.is_admin %}
+    <div class="mt-5">
+        <h5 class="text-muted mb-3">Administration</h5>
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <a href="{{ url_for('admin_dashboard') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+                        <i class="bi bi-speedometer2 text-primary fs-2 mb-2"></i>
+                        <span class="fw-semibold">Dashboard</span>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="{{ url_for('admin_subjects') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+                        <i class="bi bi-book text-success fs-2 mb-2"></i>
+                        <span class="fw-semibold">Subjects</span>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="{{ url_for('admin_lessons') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+                        <i class="bi bi-camera-reel text-warning fs-2 mb-2"></i>
+                        <span class="fw-semibold">Lessons</span>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="{{ url_for('admin_users') }}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+                        <i class="bi bi-people text-info fs-2 mb-2"></i>
+                        <span class="fw-semibold">Users</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Logout Button -->
+    <div class="mt-4">
+        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100 py-3 rounded-3">
+            <i class="bi bi-box-arrow-right me-2"></i> Sign Out
+        </a>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0,0,0,0.03);
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+
+    .card:active {
+        transform: translateY(0);
+    }
+
+    @media (max-width: 576px) {
+        .col-6 {
+            padding: 5px;
+        }
+
+        .card.p-3 {
+            padding: 0.8rem !important;
+        }
+
+        .fs-2 {
+            font-size: 1.5rem !important;
+        }
+    }
+</style>
+{% endblock %}

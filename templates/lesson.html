@@ -1,0 +1,939 @@
+<!-- templates/lesson.html - POLISHED GATEWAY PAGE WITH GOLD-ON-NAVY BRANDING -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover">
+    <title>{{ lesson.title }} - myMSCE</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="{{ url_for('static', filename='js/history-manager.js') }}"></script>
+
+    <style>
+        /* Gold on Navy with Morphism */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            color: #1e293b;
+            line-height: 1.5;
+        }
+
+        /* ===== PAGE LOADER ===== */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1a2b4c;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s ease;
+        }
+        .page-loader.hidden { opacity: 0; pointer-events: none; }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(251, 191, 36, 0.1);
+            border-top-color: #fbbf24;
+            border-radius: 50%;
+            animation: spin 0.8s cubic-bezier(0.2, 0.9, 0.3, 1) infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== SKELETON LOADING STATES ===== */
+        .skeleton {
+            background: linear-gradient(90deg,
+                rgba(203, 213, 225, 0.3) 25%,
+                rgba(251, 191, 36, 0.1) 50%,
+                rgba(203, 213, 225, 0.3) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-line {
+            height: 16px;
+            background: rgba(203, 213, 225, 0.3);
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .skeleton-line.w20 { width: 20%; }
+        .skeleton-line.w30 { width: 30%; }
+        .skeleton-line.w40 { width: 40%; }
+        .skeleton-line.w50 { width: 50%; }
+        .skeleton-line.w60 { width: 60%; }
+        .skeleton-line.w70 { width: 70%; }
+        .skeleton-line.w80 { width: 80%; }
+        .skeleton-line.w90 { width: 90%; }
+
+        .skeleton-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .skeleton-icon {
+            width: 64px;
+            height: 64px;
+            background: #e2e8f0;
+            border-radius: 16px;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: #1a2b4c; /* Light navy */
+            color: white;
+            padding: 2rem 2rem 3rem;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #fbbf24, #2563eb);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .breadcrumb {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            flex-wrap: wrap;
+        }
+
+        .breadcrumb a {
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: color 0.2s;
+            padding: 0.25rem 0.5rem;
+            border-radius: 30px;
+        }
+
+        .breadcrumb a:hover {
+            color: #fbbf24;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .breadcrumb span {
+            color: rgba(255,255,255,0.3);
+        }
+
+        .badge-wrapper {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 0.5rem 1rem;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-free {
+            background: #fbbf24;
+            color: #0f172a;
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+        }
+
+        .badge-form {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            word-break: break-word;
+        }
+
+        .description {
+            color: rgba(255,255,255,0.8);
+            font-size: 1.1rem;
+            max-width: 600px;
+            word-break: break-word;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* ===== PROGRESS SECTION ===== */
+        .progress-section {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            animation: fadeInUp 0.5s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            color: #475569;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .progress-header i { color: #fbbf24; margin-right: 0.25rem; }
+
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 100px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #fbbf24, #2563eb);
+            width: 0%;
+            transition: width 0.5s cubic-bezier(0.2, 0.9, 0.3, 1);
+        }
+
+        .complete-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            cursor: pointer;
+            padding: 0.5rem 0;
+        }
+
+        .complete-toggle input { display: none; }
+
+        .toggle-slider {
+            width: 48px;
+            height: 24px;
+            background: #cbd5e1;
+            border-radius: 100px;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .complete-toggle input:checked + .toggle-slider {
+            background: #10b981;
+        }
+
+        .complete-toggle input:checked + .toggle-slider::before {
+            transform: translateX(24px);
+        }
+
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #475569;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .toggle-label i { color: #10b981; }
+
+        /* ===== ACTION CARDS ===== */
+        .action-grid {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-card {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+            border: 1px solid #e2e8f0;
+            animation: fadeInUp 0.5s ease 0.1s both;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -8px rgba(0,0,0,0.1);
+            border-color: #fbbf24;
+        }
+
+        .action-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 18px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #1a2b4c;
+            flex-shrink: 0;
+        }
+
+        .action-icon.video { background: #fee2e2; color: #dc2626; }
+        .action-icon.audio { background: #dbeafe; color: #2563eb; }
+        .action-icon.document { background: #dcfce7; color: #16a34a; }
+        .action-icon.youtube { background: #fee2e2; color: #dc2626; }
+
+        .action-info {
+            flex: 1;
+            min-width: 0; /* Enables text truncation */
+        }
+
+        .action-info h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .action-info p {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .action-meta {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            flex-wrap: wrap;
+        }
+
+        .action-meta i { margin-right: 0.25rem; color: #fbbf24; }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .action-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .action-button:active { transform: scale(0.97); }
+
+        .action-button.watch {
+            background: #1a2b4c;
+            color: white;
+        }
+        .action-button.watch:hover {
+            background: #fbbf24;
+            color: #0f172a;
+        }
+        .action-button.watch i { transition: transform 0.2s; }
+        .action-button.watch:hover i { transform: translateX(4px); }
+
+        .action-button.download {
+            background: #e2e8f0;
+            color: #334155;
+        }
+        .action-button.download:hover {
+            background: #cbd5e1;
+        }
+        .action-button.download i { transition: transform 0.2s; }
+        .action-button.download:hover i { transform: translateY(2px); }
+
+        .action-button.icon-only {
+            padding: 0.75rem;
+        }
+
+        /* ===== INFO CARDS ===== */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.25rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            animation: fadeInUp 0.5s ease 0.2s both;
+            overflow: hidden;
+        }
+
+        .info-card h4 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-card h4 i { color: #fbbf24; }
+
+        .info-card .value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0f172a;
+            word-break: break-word;
+        }
+
+        /* ===== LESSON LIST ===== */
+        .lesson-list {
+            margin-top: 2rem;
+            animation: fadeInUp 0.5s ease 0.3s both;
+        }
+
+        .lesson-list h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .lesson-list h3 i { color: #fbbf24; }
+
+        .lesson-items {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+
+        .lesson-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #f1f5f9;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .lesson-item:last-child { border-bottom: none; }
+        .lesson-item:hover { background: #f8fafc; }
+
+        .lesson-item.active {
+            background: #fef3c7;
+            border-left: 4px solid #fbbf24;
+            margin-left: -4px;
+        }
+
+        .lesson-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #475569;
+            flex-shrink: 0;
+        }
+
+        .lesson-item.active .lesson-number {
+            background: #fbbf24;
+            color: #0f172a;
+        }
+
+        .lesson-info {
+            flex: 1;
+            min-width: 0; /* Enables text truncation */
+        }
+
+        .lesson-title {
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .lesson-meta {
+            font-size: 0.75rem;
+            color: #64748b;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .lesson-meta i { margin-right: 0.25rem; color: #fbbf24; }
+
+        .lesson-status {
+            color: #fbbf24;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        /* ===== SKELETON CARD ===== */
+        .skeleton-card {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1rem;
+        }
+
+        /* ===== TOAST NOTIFICATIONS ===== */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 0;
+            right: 0;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+            padding: 0 16px;
+        }
+
+        .toast {
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            box-shadow: 0 15px 30px -10px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            animation: toastIn 0.3s ease;
+            pointer-events: auto;
+            margin-bottom: 8px;
+            max-width: 380px;
+            width: 100%;
+            border-left: 4px solid #fbbf24;
+        }
+        .toast i { color: #fbbf24; }
+        .toast button {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            margin-left: auto;
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 640px) {
+            .header { padding: 1.5rem 1rem 2rem; }
+            .container { padding: 0 1rem; }
+            h1 { font-size: 1.8rem; }
+
+            .action-card {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .action-info h3,
+            .action-info p {
+                white-space: normal;
+                word-break: break-word;
+            }
+
+            .action-meta {
+                justify-content: center;
+            }
+
+            .action-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== SAFE AREAS ===== */
+        @supports (padding: max(0px)) {
+            body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+            .header { padding-top: max(2rem, env(safe-area-inset-top)); }
+            .toast-container { top: max(20px, env(safe-area-inset-top)); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Loader -->
+    <div class="page-loader" id="pageLoader">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="{{ url_for('dashboard') }}"><i class="bi bi-house-door"></i> Dashboard</a>
+                <span>/</span>
+                <a href="{{ url_for('view_subject', subject_id=lesson.subject.id) }}">
+                    <i class="bi bi-{{ lesson.subject.icon }}"></i> {{ lesson.subject.name }}
+                </a>
+            </div>
+
+            <div class="badge-wrapper">
+                {% if lesson.is_free %}
+                    <span class="badge badge-free"><i class="bi bi-gift-fill"></i> Free Sample</span>
+                {% endif %}
+                <span class="badge badge-form">Form {{ lesson.form }}</span>
+            </div>
+
+            <h1>{{ lesson.title }}</h1>
+            {% if lesson.description %}
+                <p class="description">{{ lesson.description }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Content with Skeleton -->
+    <div class="main-content" id="mainContent">
+        <!-- Real Content -->
+        <div id="realContent">
+            <!-- Progress Section -->
+            <div class="progress-section">
+                <div class="progress-header">
+                    <span><i class="bi bi-bar-chart-fill"></i> Your Progress</span>
+                    <span id="progressPercentage">{{ user_progress|default(0) }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="lessonProgress" style="width: {{ user_progress|default(0) }}%;"></div>
+                </div>
+                <label class="complete-toggle">
+                    <input type="checkbox" id="markComplete" {% if completed %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-label">
+                        <i class="bi bi-check-circle"></i> Mark as completed
+                    </span>
+                </label>
+            </div>
+
+            <!-- Action Cards - UPDATED with proper width control -->
+            <div class="action-grid">
+                {% if lesson.content_type == 'video' and lesson.file_path %}
+                    <!-- Video Card -->
+                    <div class="action-card">
+                        <div class="action-icon video">
+                            <i class="bi bi-camera-reel-fill"></i>
+                        </div>
+                        <div class="action-info">
+                            <h3>Video Lesson</h3>
+                            <p>{{ lesson.file_name or 'Video content' }}</p>
+                            <div class="action-meta">
+                                <span><i class="bi bi-clock"></i> {{ lesson.duration }} min</span>
+                                <span><i class="bi bi-file-earmark"></i> {{ (lesson.file_size / 1024 / 1024)|round(1) }} MB</span>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <a href="{{ url_for('stream_lesson', lesson_id=lesson.id) }}" class="action-button watch" target="_blank">
+                                <i class="bi bi-play-circle"></i> Watch
+                            </a>
+                            {% if lesson.downloadable %}
+                                <a href="{{ url_for('download_lesson', lesson_id=lesson.id) }}" class="action-button download icon-only" title="Download">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                {% elif lesson.content_type == 'audio' and lesson.file_path %}
+                    <!-- Audio Card - FIXED WIDTH -->
+                    <div class="action-card">
+                        <div class="action-icon audio">
+                            <i class="bi bi-mic-fill"></i>
+                        </div>
+                        <div class="action-info">
+                            <h3>{{ lesson.file_name or 'Audio Lesson' }}</h3>
+                            <p>Audio content</p>
+                            <div class="action-meta">
+                                <span><i class="bi bi-clock"></i> {{ lesson.duration }} min</span>
+                                <span><i class="bi bi-file-earmark"></i> {{ (lesson.file_size / 1024 / 1024)|round(1) }} MB</span>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <a href="{{ url_for('stream_lesson', lesson_id=lesson.id) }}" class="action-button watch" target="_blank">
+                                <i class="bi bi-play-circle"></i> Listen
+                            </a>
+                            {% if lesson.downloadable %}
+                                <a href="{{ url_for('download_lesson', lesson_id=lesson.id) }}" class="action-button download icon-only" title="Download">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                {% elif lesson.content_type == 'document' and lesson.file_path %}
+                    <!-- Document Card - FIXED WIDTH with proper containment -->
+                    <div class="action-card">
+                        <div class="action-icon document">
+                            {% if lesson.file_extension == 'pdf' %}
+                                <i class="bi bi-file-pdf-fill"></i>
+                            {% elif lesson.file_extension in ['doc', 'docx'] %}
+                                <i class="bi bi-file-word-fill"></i>
+                            {% elif lesson.file_extension in ['ppt', 'pptx'] %}
+                                <i class="bi bi-file-ppt-fill"></i>
+                            {% else %}
+                                <i class="bi bi-file-earmark-text-fill"></i>
+                            {% endif %}
+                        </div>
+                        <div class="action-info">
+                            <h3>{{ lesson.file_name }}</h3>
+                            <p>{{ lesson.file_extension|upper }} Document</p>
+                            <div class="action-meta">
+                                <span><i class="bi bi-file-earmark"></i> {{ (lesson.file_size / 1024 / 1024)|round(1) }} MB</span>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            {% if lesson.downloadable %}
+                                <a href="{{ url_for('download_lesson', lesson_id=lesson.id) }}" class="action-button download">
+                                    <i class="bi bi-download"></i> Download
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                {% elif lesson.content_type == 'youtube' and lesson.video_url %}
+                    <!-- YouTube Card -->
+                    <div class="action-card">
+                        <div class="action-icon youtube">
+                            <i class="bi bi-youtube"></i>
+                        </div>
+                        <div class="action-info">
+                            <h3>YouTube Video</h3>
+                            <p>{{ lesson.title }}</p>
+                            <div class="action-meta">
+                                <span><i class="bi bi-clock"></i> {{ lesson.duration }} min</span>
+                                <span><i class="bi bi-play-circle"></i> External player</span>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <a href="{{ url_for('watch_lesson', lesson_id=lesson.id) }}" class="action-button watch">
+                                <i class="bi bi-play-circle"></i> Watch
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Info Cards - Ensure they don't stretch -->
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4><i class="bi bi-info-circle"></i> Type</h4>
+                    <div class="value">{{ lesson.content_type|upper }}</div>
+                </div>
+                <div class="info-card">
+                    <h4><i class="bi bi-clock"></i> Duration</h4>
+                    <div class="value">{{ lesson.duration }} minutes</div>
+                </div>
+                <div class="info-card">
+                    <h4><i class="bi bi-calendar"></i> Added</h4>
+                    <div class="value">{{ lesson.created_at.strftime('%d %b %Y') }}</div>
+                </div>
+            </div>
+
+            <!-- More Lessons -->
+            {% if subject_lessons and subject_lessons|length > 1 %}
+            <div class="lesson-list">
+                <h3><i class="bi bi-list-ul"></i> More in {{ lesson.subject.name }}</h3>
+                <div class="lesson-items">
+                    {% for l in subject_lessons %}
+                        <a href="{{ url_for('view_lesson', lesson_id=l.id) }}" class="lesson-item {% if l.id == lesson.id %}active{% endif %}">
+                            <div class="lesson-number">{{ loop.index }}</div>
+                            <div class="lesson-info">
+                                <div class="lesson-title">{{ l.title }}</div>
+                                <div class="lesson-meta">
+                                    <span><i class="bi bi-clock"></i> {{ l.duration }} min</span>
+                                    <span><i class="bi bi-tag"></i> {{ l.content_type|upper }}</span>
+                                </div>
+                            </div>
+                            {% if l.id == lesson.id %}
+                                <i class="bi bi-play-circle-fill lesson-status"></i>
+                            {% else %}
+                                <i class="bi bi-chevron-right" style="color: #94a3b8;"></i>
+                            {% endif %}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // ===== TOAST FUNCTION =====
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            let icon = type === 'success' ? 'check-circle-fill' :
+                      type === 'error' ? 'exclamation-circle-fill' : 'info-circle';
+
+            toast.innerHTML = `
+                <i class="bi bi-${icon}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), duration);
+        }
+
+        // ===== PAGE LOADER =====
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                document.getElementById('pageLoader').classList.add('hidden');
+            }, 600);
+        });
+
+        // ===== MAIN FUNCTIONALITY =====
+        document.addEventListener('DOMContentLoaded', function() {
+            const markComplete = document.getElementById('markComplete');
+            const lessonId = {{ lesson.id }};
+            const duration = {{ lesson.duration * 60 }};
+            const progressFill = document.getElementById('lessonProgress');
+            const progressPercent = document.getElementById('progressPercentage');
+
+            // Load progress
+            fetch(`/api/lesson/${lessonId}/progress`)
+                .then(response => response.json())
+                .then(data => {
+                    if (progressFill) progressFill.style.width = data.progress + '%';
+                    if (progressPercent) progressPercent.textContent = data.progress + '%';
+                })
+                .catch(() => {});
+
+            // Mark complete toggle
+            if (markComplete) {
+                markComplete.addEventListener('change', function() {
+                    fetch(`/api/lesson/${lessonId}/progress`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            watch_time: duration,
+                            duration: duration,
+                            completed: this.checked
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(() => {
+                        showToast(this.checked ? '🎉 Lesson completed!' : 'Progress updated', 'success');
+                        if (progressFill) progressFill.style.width = this.checked ? '100%' : '0%';
+                        if (progressPercent) progressPercent.textContent = this.checked ? '100%' : '0%';
+                    })
+                    .catch(() => showToast('Error updating progress', 'error'));
+                });
+            }
+
+            // Show any flashed messages
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        setTimeout(() => {
+                            showToast("{{ message|safe }}", "{{ category if category in ['success', 'error', 'warning'] else 'info' }}");
+                        }, {{ (loop.index0 * 200) + 1000 }});
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        });
+    </script>
+</body>
+</html>

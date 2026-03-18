@@ -1,0 +1,1036 @@
+<!-- templates/admin/dashboard.html - FIXED TEST MODE ENDPOINT -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover">
+    <title>Admin Dashboard - myMSCE</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/history-manager.js') }}"></script>
+
+    <style>
+        /* Gold on Navy with Morphism */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a2b4c;
+            color: rgba(255, 255, 255, 0.9);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* Subtle grain texture */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.03"/></svg>');
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.15;
+        }
+
+        /* ===== PAGE LOADER ===== */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1a2b4c;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s ease;
+        }
+        .page-loader.hidden { opacity: 0; pointer-events: none; }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(251, 191, 36, 0.1);
+            border-top-color: #fbbf24;
+            border-radius: 50%;
+            animation: spin 0.8s cubic-bezier(0.2, 0.9, 0.3, 1) infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== MAIN CONTAINER ===== */
+        .app {
+            max-width: 1600px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+            padding: 0 24px;
+        }
+
+        .app.menu-open {
+            transform: translateX(280px);
+        }
+
+        /* ===== SLIDE-IN MENU ===== */
+        .slide-menu {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            background: rgba(26, 43, 76, 0.98);
+            backdrop-filter: blur(20px);
+            z-index: 2000;
+            transition: left 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+            box-shadow: 2px 0 30px rgba(0,0,0,0.4);
+            padding: 24px 0;
+            overflow-y: auto;
+            border-right: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .slide-menu.open { left: 0; }
+
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            z-index: 1999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .menu-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .menu-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .menu-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .menu-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #fbbf24, #2563eb);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .menu-user-info h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 2px;
+        }
+
+        .menu-user-info p {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .menu-plan-badge {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .menu-section {
+            padding: 0 20px;
+            margin-bottom: 24px;
+        }
+
+        .menu-section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255,255,255,0.3);
+            margin-bottom: 12px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+            width: 100%;
+            background: none;
+            border: none;
+            font: inherit;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .menu-item:hover {
+            background: rgba(251, 191, 36, 0.1);
+            color: white;
+        }
+
+        .menu-item i {
+            width: 24px;
+            color: #fbbf24;
+            font-size: 1.2rem;
+        }
+
+        .menu-item .badge {
+            background: #fbbf24;
+            color: #1a2b4c;
+            padding: 2px 8px;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+
+        .menu-divider {
+            height: 1px;
+            background: rgba(251, 191, 36, 0.1);
+            margin: 16px 0;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: rgba(26, 43, 76, 0.3);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            padding: 30px 24px;
+            margin: 20px 0 30px;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .profile-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .profile-avatar {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #fbbf24, #2563eb);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1a2b4c;
+            font-weight: 700;
+            font-size: 1.8rem;
+            border: 3px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .profile-info {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .profile-info h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: white;
+        }
+
+        .profile-info .highlight {
+            color: #fbbf24;
+        }
+
+        .admin-badge {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            padding: 8px 16px;
+            border-radius: 30px;
+            color: #fbbf24;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            margin-left: auto;
+        }
+
+        .header-icon-btn {
+            width: 44px;
+            height: 44px;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(4px);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fbbf24;
+            font-size: 1.3rem;
+            cursor: pointer;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            transition: all 0.2s;
+        }
+
+        /* ===== STATS CARDS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+            animation: fadeInUp 0.5s ease 0.1s both;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 992px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-card {
+            background: rgba(30, 58, 95, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 24px;
+            border: 1px solid rgba(251, 191, 36, 0.1);
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: #fbbf24;
+        }
+
+        .stat-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(251, 191, 36, 0.1);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .stat-icon i {
+            font-size: 2rem;
+            color: #fbbf24;
+        }
+
+        .stat-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .stat-info h3 {
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-info p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        /* ===== CONTENT LAYOUT ===== */
+        .content-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 24px;
+            margin-top: 20px;
+            animation: fadeInUp 0.5s ease 0.2s both;
+        }
+
+        @media (max-width: 1200px) {
+            .content-layout {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+        }
+
+        .left-column, .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            width: 100%;
+        }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: rgba(30, 58, 95, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(251, 191, 36, 0.1);
+            border-radius: 24px;
+            overflow: hidden;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .card:hover {
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+
+        .card-header {
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(251, 191, 36, 0.1);
+            padding: 20px 24px;
+        }
+
+        .card-header h5 {
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-header h5 i {
+            color: #fbbf24;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* ===== CHART CONTAINER ===== */
+        .chart-container {
+            height: 300px;
+            position: relative;
+            width: 100%;
+        }
+
+        /* ===== LIST GROUP ===== */
+        .list-group {
+            background: transparent;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .list-group-item {
+            background: transparent;
+            border-bottom: 1px solid rgba(251, 191, 36, 0.1);
+            padding: 16px 24px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .list-group-item:hover {
+            background: rgba(251, 191, 36, 0.05);
+        }
+
+        .d-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .amount {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        /* ===== BUTTON GRID ===== */
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: #fbbf24;
+            color: #1a2b4c;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline-primary {
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            color: #fbbf24;
+            background: transparent;
+        }
+
+        .btn-outline-primary:hover {
+            background: rgba(251, 191, 36, 0.1);
+            color: white;
+        }
+
+        /* ===== BADGES ===== */
+        .badge {
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .badge.bg-success {
+            background: rgba(16, 185, 129, 0.15) !important;
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge.bg-warning {
+            background: rgba(245, 158, 11, 0.15) !important;
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* ===== SUBSCRIPTION STATS ===== */
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(251, 191, 36, 0.1);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: white;
+        }
+
+        .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 10px;
+        }
+        .dot-form3 { background: #3b82f6; }
+        .dot-form4 { background: #10b981; }
+        .dot-combined { background: #fbbf24; }
+
+        /* ===== SECTION TITLE ===== */
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .section-title h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .section-title a {
+            color: #fbbf24;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* ===== TOAST ===== */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 0;
+            right: 0;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(26, 43, 76, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-left: 4px solid #fbbf24;
+            padding: 14px 20px;
+            border-radius: 60px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+            max-width: 380px;
+            width: 100%;
+            animation: toastIn 0.3s ease;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .app { padding: 0 16px; }
+            .profile-section { flex-direction: column; text-align: center; }
+            .header-actions { margin: 0 auto; }
+            .content-layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Loader -->
+    <div class="page-loader" id="pageLoader">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Slide-in Menu -->
+    <div class="slide-menu" id="slideMenu">
+        <div class="menu-header">
+            <div class="menu-user">
+                <div class="menu-avatar">{{ current_user.username[0]|upper }}</div>
+                <div class="menu-user-info">
+                    <h4>{{ current_user.username }}</h4>
+                    <p>Administrator</p>
+                </div>
+            </div>
+            <div class="menu-plan-badge">
+                <i class="bi bi-shield-lock-fill"></i> Admin Access
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-section-title">Main</div>
+            <a href="{{ url_for('admin_dashboard') }}" class="menu-item active">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a href="{{ url_for('admin_users') }}" class="menu-item">
+                <i class="bi bi-people-fill"></i> Users
+            </a>
+            <a href="{{ url_for('admin_subjects') }}" class="menu-item">
+                <i class="bi bi-book-fill"></i> Subjects
+            </a>
+            <a href="{{ url_for('admin_lessons') }}" class="menu-item">
+                <i class="bi bi-camera-reels-fill"></i> Lessons
+            </a>
+            <a href="{{ url_for('admin_payments') }}" class="menu-item">
+                <i class="bi bi-credit-card-fill"></i> Payments
+            </a>
+            <a href="{{ url_for('admin_sample_lessons') }}" class="menu-item">
+                <i class="bi bi-gift-fill"></i> Free Samples
+            </a>
+        </div>
+
+        <div class="menu-divider"></div>
+
+        <div class="menu-section">
+            <div class="menu-section-title">Developer</div>
+            <!-- FIXED: Changed endpoint to 'toggle_test_mode' -->
+            <a href="{{ url_for('toggle_test_mode') }}" class="menu-item">
+                <i class="bi bi-flask"></i>
+                <span>Toggle Test Mode</span>
+                <span class="badge">{{ 'Active' if test_mode else 'Inactive' }}</span>
+            </a>
+        </div>
+
+        <div class="menu-divider"></div>
+
+        <div class="menu-section">
+            <div class="menu-section-title">Account</div>
+            <a href="{{ url_for('user_menu') }}" class="menu-item">
+                <i class="bi bi-gear-fill"></i> Settings
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="menu-item">
+                <i class="bi bi-house-fill"></i> Student View
+            </a>
+            <form method="POST" action="{{ url_for('logout') }}">
+                <button type="submit" class="menu-item">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Menu Overlay -->
+    <div class="menu-overlay" id="menuOverlay"></div>
+
+    <div class="app" id="app">
+        <!-- Header -->
+        <div class="header">
+            <div class="profile-section">
+                <div class="profile-avatar" id="menuToggle">
+                    {{ current_user.username[0]|upper }}
+                </div>
+                <div class="profile-info">
+                    <h2>{{ current_user.username }} <span class="highlight">✨</span></h2>
+                    <div class="admin-badge">
+                        <i class="bi bi-shield-lock-fill"></i> Administrator
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="header-icon-btn" id="menuToggleBtn">
+                        <i class="bi bi-list"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+                    <div class="stat-info">
+                        <h3>{{ total_users }}</h3>
+                        <p>Total Users</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-icon"><i class="bi bi-star-fill"></i></div>
+                    <div class="stat-info">
+                        <h3>{{ active_subscribers }}</h3>
+                        <p>Active Subscribers</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-icon"><i class="bi bi-credit-card-fill"></i></div>
+                    <div class="stat-info">
+                        <h3>MWK {{ "{:,.0f}".format(total_revenue) }}</h3>
+                        <p>Total Revenue</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-content">
+                    <div class="stat-icon"><i class="bi bi-book-fill"></i></div>
+                    <div class="stat-info">
+                        <h3>{{ total_lessons }}</h3>
+                        <p>Total Lessons</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div id="toastContainer" class="toast-container"></div>
+
+        <!-- Main Content -->
+        <div class="content-layout">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Revenue Chart -->
+                <div class="section-title">
+                    <h2>Revenue Overview</h2>
+                    <a href="{{ url_for('admin_payments') }}">View all <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Payments -->
+                <div class="section-title">
+                    <h2>Recent Payments</h2>
+                    <a href="{{ url_for('admin_payments') }}">View all <i class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <div class="card">
+                    <div class="list-group">
+                        {% for payment in recent_payments %}
+                        <div class="list-group-item">
+                            <div class="d-flex">
+                                <div>
+                                    <h6>{{ payment.user.username }}</h6>
+                                    <small>{{ payment.created_at.strftime('%H:%M, %d %b') }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="amount">MWK {{ "{:,.0f}".format(payment.amount) }}</span>
+                                    <br>
+                                    <span class="badge bg-{{ 'success' if payment.status == 'completed' else 'warning' }}">
+                                        {{ payment.status }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-column">
+                <!-- Quick Actions -->
+                <div class="section-title">
+                    <h2>Quick Actions</h2>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="button-grid">
+                            <a href="{{ url_for('admin_create_subject') }}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Add New Subject
+                            </a>
+                            <a href="{{ url_for('admin_create_lesson') }}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Add New Lesson
+                            </a>
+                            <a href="{{ url_for('admin_subjects') }}" class="btn btn-outline-primary">
+                                <i class="bi bi-pencil"></i> Manage Subjects
+                            </a>
+                            <a href="{{ url_for('admin_lessons') }}" class="btn btn-outline-primary">
+                                <i class="bi bi-pencil"></i> Manage Lessons
+                            </a>
+                            <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary">
+                                <i class="bi bi-people"></i> Manage Users
+                            </a>
+                            <a href="{{ url_for('admin_payments') }}" class="btn btn-outline-primary">
+                                <i class="bi bi-credit-card"></i> View Payments
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subscription Stats -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5><i class="bi bi-pie-chart"></i> Subscription Breakdown</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 180px;">
+                            <canvas id="subscriptionChart"></canvas>
+                        </div>
+                        <div class="mt-4">
+                            <div class="stat-row">
+                                <span class="stat-label"><span class="color-dot dot-form3"></span> Form 3</span>
+                                <span class="stat-value">{{ form3_count }}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label"><span class="color-dot dot-form4"></span> Form 4</span>
+                                <span class="stat-value">{{ form4_count }}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label"><span class="color-dot dot-combined"></span> Combined</span>
+                                <span class="stat-value">{{ combined_count }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toast function
+        function showToast(message, type = 'info', duration = 4000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            let icon = type === 'success' ? 'check-circle' : 'info-circle';
+            toast.innerHTML = `
+                <i class="bi bi-${icon}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), duration);
+        }
+
+        // Page loader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('pageLoader').classList.add('hidden');
+            }, 600);
+        });
+
+        // Menu toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const menu = document.getElementById('slideMenu');
+            const overlay = document.getElementById('menuOverlay');
+            const app = document.getElementById('app');
+            const menuToggle = document.getElementById('menuToggle');
+            const menuToggleBtn = document.getElementById('menuToggleBtn');
+
+            function openMenu() {
+                menu.classList.add('open');
+                overlay.classList.add('active');
+                app.classList.add('menu-open');
+            }
+
+            function closeMenu() {
+                menu.classList.remove('open');
+                overlay.classList.remove('active');
+                app.classList.remove('menu-open');
+            }
+
+            menuToggle?.addEventListener('click', openMenu);
+            menuToggleBtn?.addEventListener('click', openMenu);
+            overlay?.addEventListener('click', closeMenu);
+
+            // Revenue Chart
+            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+            new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ revenue_labels|tojson }},
+                    datasets: [{
+                        label: 'Daily Revenue (MWK)',
+                        data: {{ revenue_data|tojson }},
+                        borderColor: '#fbbf24',
+                        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#fbbf24',
+                        pointBorderColor: '#1a2b4c',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: 'rgba(255,255,255,0.5)' } }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: 'rgba(255,255,255,0.5)' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'rgba(255,255,255,0.5)' }
+                        }
+                    }
+                }
+            });
+
+            // Subscription Chart
+            const subCtx = document.getElementById('subscriptionChart').getContext('2d');
+            new Chart(subCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Form 3', 'Form 4', 'Combined'],
+                    datasets: [{
+                        data: [{{ form3_count }}, {{ form4_count }}, {{ combined_count }}],
+                        backgroundColor: ['#3b82f6', '#10b981', '#fbbf24'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    cutout: '65%'
+                }
+            });
+
+            // Flash messages
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        setTimeout(() => showToast("{{ message|safe }}", "{{ category }}"), {{ loop.index0 * 200 }});
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        });
+    </script>
+</body>
+</html>

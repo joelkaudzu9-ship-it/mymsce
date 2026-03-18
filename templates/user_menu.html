@@ -1,0 +1,565 @@
+<!-- templates/user_menu.html - STANDALONE USER MENU WITH DARK THEME -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>My Account - myMSCE</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="{{ url_for('static', filename='js/history-manager.js') }}"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        /* Main container */
+        .app {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 24px 20px;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .back-btn {
+            width: 48px;
+            height: 48px;
+            background: #1e293b;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fbbf24;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(251, 191, 36, 0.1);
+        }
+
+        .back-btn:hover {
+            background: #fbbf24;
+            color: #0f172a;
+            transform: translateX(-4px);
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+        }
+
+        .page-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+            margin: 0;
+        }
+
+        /* Profile Card */
+        .profile-card {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .profile-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #fbbf24, #2563eb);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 20px -5px rgba(0,0,0,0.3);
+        }
+
+        .profile-avatar i {
+            font-size: 3rem;
+            color: white;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-info h2 {
+            color: white;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .profile-info .email {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .profile-info .email i {
+            color: #fbbf24;
+        }
+
+        .plan-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .plan-badge.active {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .plan-badge.inactive {
+            background: rgba(100, 116, 139, 0.1);
+            color: #94a3b8;
+            border: 1px solid rgba(100, 116, 139, 0.2);
+        }
+
+        /* Menu Grid */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 480px) {
+            .menu-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .menu-item {
+            background: #1e293b;
+            border-radius: 20px;
+            padding: 20px 12px;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(251, 191, 36, 0.1);
+            display: block;
+        }
+
+        .menu-item:hover {
+            transform: translateY(-4px);
+            border-color: #fbbf24;
+            box-shadow: 0 10px 20px -10px rgba(0,0,0,0.5);
+        }
+
+        .menu-item:active {
+            transform: scale(0.98);
+        }
+
+        .menu-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+        }
+
+        .menu-icon.primary { background: rgba(59, 130, 246, 0.1); }
+        .menu-icon.success { background: rgba(16, 185, 129, 0.1); }
+        .menu-icon.warning { background: rgba(245, 158, 11, 0.1); }
+        .menu-icon.info { background: rgba(6, 182, 212, 0.1); }
+        .menu-icon.secondary { background: rgba(100, 116, 139, 0.1); }
+        .menu-icon.danger { background: rgba(239, 68, 68, 0.1); }
+
+        .menu-icon i {
+            font-size: 2rem;
+        }
+
+        .menu-icon.primary i { color: #3b82f6; }
+        .menu-icon.success i { color: #10b981; }
+        .menu-icon.warning i { color: #f59e0b; }
+        .menu-icon.info i { color: #06b6d4; }
+        .menu-icon.secondary i { color: #94a3b8; }
+        .menu-icon.danger i { color: #ef4444; }
+
+        .menu-item h6 {
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .menu-item small {
+            color: #64748b;
+            font-size: 0.7rem;
+        }
+
+        /* Section Title */
+        .section-title {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+
+        /* Admin Grid */
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 480px) {
+            .admin-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .admin-item {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 16px 12px;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(251, 191, 36, 0.1);
+            display: block;
+        }
+
+        .admin-item:hover {
+            background: rgba(251, 191, 36, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .admin-item i {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .admin-item span {
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: block;
+        }
+
+        .admin-item.primary i { color: #3b82f6; }
+        .admin-item.success i { color: #10b981; }
+        .admin-item.warning i { color: #f59e0b; }
+        .admin-item.info i { color: #06b6d4; }
+
+        /* Logout Button */
+        .logout-btn {
+            background: transparent;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 16px;
+            padding: 16px 24px;
+            color: #ef4444;
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            margin-top: 24px;
+        }
+
+        .logout-btn:hover {
+            background: #ef4444;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.3);
+        }
+
+        .logout-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: #1e293b;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 30px;
+            box-shadow: 0 15px 30px -8px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 280px;
+            max-width: 380px;
+            animation: slideIn 0.3s ease;
+            pointer-events: auto;
+            border-left: 4px solid #fbbf24;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        /* Responsive */
+        @media (max-width: 380px) {
+            .profile-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .profile-avatar {
+                margin: 0 auto;
+            }
+        }
+
+        /* Safe areas */
+        @supports (padding: max(0px)) {
+            .app {
+                padding-left: max(20px, env(safe-area-inset-left));
+                padding-right: max(20px, env(safe-area-inset-right));
+                padding-top: max(24px, env(safe-area-inset-top));
+                padding-bottom: max(24px, env(safe-area-inset-bottom));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <div class="page-header">
+            <a href="javascript:history.back()" class="back-btn">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1>My Account</h1>
+        </div>
+
+        <!-- Profile Card -->
+        <div class="profile-card">
+            <div class="profile-content">
+                <div class="profile-avatar">
+                    <i class="bi bi-person-circle"></i>
+                </div>
+                <div class="profile-info">
+                    <h2>{{ user.username }}</h2>
+                    <div class="email">
+                        <i class="bi bi-envelope-fill"></i>
+                        {{ user.email }}
+                    </div>
+                    {% if user.is_active_subscriber %}
+                        <span class="plan-badge active">
+                            <i class="bi bi-star-fill"></i>
+                            {{ user.subscription_form|upper }} Plan - {{ user.subscription_type|title }}
+                        </span>
+                    {% else %}
+                        <span class="plan-badge inactive">
+                            <i class="bi bi-star"></i>
+                            No Active Plan
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Menu Grid -->
+        <div class="menu-grid">
+            <!-- Profile -->
+            <a href="{{ url_for('profile') }}" class="menu-item">
+                <div class="menu-icon primary">
+                    <i class="bi bi-person"></i>
+                </div>
+                <h6>My Profile</h6>
+                <small>View & edit</small>
+            </a>
+
+            <!-- My Lessons -->
+            <a href="{{ url_for('dashboard') }}" class="menu-item">
+                <div class="menu-icon success">
+                    <i class="bi bi-play-circle"></i>
+                </div>
+                <h6>My Lessons</h6>
+                <small>Continue learning</small>
+            </a>
+
+            <!-- Subscription -->
+            <a href="{{ url_for('pricing') }}" class="menu-item">
+                <div class="menu-icon warning">
+                    <i class="bi bi-star"></i>
+                </div>
+                <h6>Subscription</h6>
+                <small>Manage plan</small>
+            </a>
+
+            <!-- Payments -->
+            <a href="{{ url_for('profile') }}#payments" class="menu-item">
+                <div class="menu-icon info">
+                    <i class="bi bi-credit-card"></i>
+                </div>
+                <h6>Payments</h6>
+                <small>Transaction history</small>
+            </a>
+
+            <!-- Settings -->
+            <a href="#" class="menu-item" onclick="showToast('Settings coming soon!', 'info'); return false;">
+                <div class="menu-icon secondary">
+                    <i class="bi bi-gear"></i>
+                </div>
+                <h6>Settings</h6>
+                <small>Account settings</small>
+            </a>
+
+            <!-- Help -->
+            <a href="#" class="menu-item" onclick="showToast('Help & support coming soon!', 'info'); return false;">
+                <div class="menu-icon danger">
+                    <i class="bi bi-question-circle"></i>
+                </div>
+                <h6>Help</h6>
+                <small>Support & FAQs</small>
+            </a>
+        </div>
+
+        <!-- Admin Section -->
+        {% if user.is_admin %}
+        <div class="section-title">Administration</div>
+        <div class="admin-grid">
+            <a href="{{ url_for('admin_dashboard') }}" class="admin-item primary">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('admin_subjects') }}" class="admin-item success">
+                <i class="bi bi-book"></i>
+                <span>Subjects</span>
+            </a>
+            <a href="{{ url_for('admin_lessons') }}" class="admin-item warning">
+                <i class="bi bi-camera-reel"></i>
+                <span>Lessons</span>
+            </a>
+            <a href="{{ url_for('admin_users') }}" class="admin-item info">
+                <i class="bi bi-people"></i>
+                <span>Users</span>
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Logout Button -->
+        <form method="POST" action="{{ url_for('logout') }}" style="display: contents;">
+            <button type="submit" class="logout-btn">
+                <i class="bi bi-box-arrow-right"></i>
+                Sign Out
+            </button>
+        </form>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // Toast notification function
+        function showToast(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            let icon = 'info-circle';
+            if (type === 'success') icon = 'check-circle-fill';
+            else if (type === 'error') icon = 'exclamation-circle-fill';
+            else if (type === 'warning') icon = 'exclamation-triangle-fill';
+
+            toast.innerHTML = `
+                <i class="bi bi-${icon}" style="color: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#fbbf24'};"></i>
+                <div style="flex: 1;">${message}</div>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; color: white; cursor: pointer;">✕</button>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        // Show flashed messages
+        document.addEventListener('DOMContentLoaded', function() {
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        showToast("{{ message|safe }}", "{{ category if category in ['success', 'error', 'warning'] else 'info' }}");
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        });
+    </script>
+</body>
+</html>
