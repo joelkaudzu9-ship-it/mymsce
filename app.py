@@ -61,11 +61,42 @@ app.config['SESSION_COOKIE_DOMAIN'] = None
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
-# Database
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///mymsce.db')
+# Database configuration with SSL fix
+database_url = os.getenv('DATABASE_URL', 'sqlite:///mymsce.db')
+
+# Fix for Render's PostgreSQL (postgres:// -> postgresql://)
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+# Add SSL parameters to the connection string for PostgreSQL
+if 'postgresql' in database_url:
+    # Add SSL mode to prevent connection drops
+    if '?' in database_url:
+        database_url += '&sslmode=require'
+    else:
+        database_url += '?sslmode=require'
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
+
+# Add connection pool settings for better stability
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 10,
+    'pool_recycle': 300,
+    'pool_pre_ping': True,
+    'max_overflow': 20,
+    'connect_args': {
+        'sslmode': 'require',
+        'keepalives': 1,
+        'keepalives_idle': 30,
+        'keepalives_interval': 10,
+        'keepalives_count': 5
+    }
+}
+
+
+
+
 
 # Email config
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
@@ -1646,6 +1677,28 @@ def admin_create_lesson():
     return render_template('admin/create_lesson.html', subjects=subjects)
 
 
+@app.route('/debug-db')
+def debug_db():
+    """Check database connection status"""
+    try:
+        from sqlalchemy import text
+        with db.engine.connect() as conn:
+            result = conn.execute(text("SELECT 1")).scalar()
+
+        return jsonify({
+            'status': 'connected',
+            'database_url': app.config['SQLALCHEMY_DATABASE_URI'][:50] + '...',
+            'pool_settings': app.config.get('SQLALCHEMY_ENGINE_OPTIONS', {}),
+            'test_query': result
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
+
 @app.route('/admin/lesson/<int:lesson_id>/edit', methods=['GET', 'POST'])
 @login_required
 def admin_edit_lesson(lesson_id):
@@ -1925,6 +1978,27 @@ def debug_video(lesson_id):
         'methods_tried': methods_tried,
         'embed_url': f'https://www.youtube.com/embed/{video_id}' if video_id else None
     })
+
+
+
+@app.route('/db-health')
+def db_health():
+    """Check database connection"""
+    try:
+        # Try to execute a simple query
+        from sqlalchemy import text
+        with db.engine.connect() as conn:
+            result = conn.execute(text("SELECT 1")).scalar()
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'result': result
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e)
+        }), 500
 
 
 @app.route('/fetch-operators')
@@ -2225,6 +2299,19 @@ def forbidden_error(error):
 def internal_error(error):
     db.session.rollback()
     return render_template('500.html'), 500
+
+
+# Add this near the bottom of app.py, before if __name__ == '__main__'
+with app.app_context():
+    try:
+        # Test database connection
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1')).scalar()
+        print("✅ Database connection successful")
+    except Exception as e:
+        print(f"❌ Database connection failed: {e}")
+        print("⚠️  Continuing startup - app may not function correctly")
+
 
 
 if __name__ == '__main__':
