@@ -264,27 +264,6 @@ def verify_email(token):
     return redirect(url_for('login'))
 
 
-@app.route('/resend-verification/<email>')
-def resend_verification(email):
-    """Resend verification email"""
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        flash('User not found', 'danger')
-        return redirect(url_for('login'))
-
-    if user.email_verified:
-        flash('Email already verified', 'info')
-        return redirect(url_for('login'))
-
-    try:
-        send_verification_email(user)
-        flash('Verification email resent. Please check your inbox.', 'success')
-    except Exception as e:
-        app.logger.error(f"Failed to resend email: {e}")
-        flash('Could not send verification email. Please try again later.', 'danger')
-
-    return redirect(url_for('login'))
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -1325,6 +1304,7 @@ def verify_email_reminder():
 @app.route('/resend-verification')
 @login_required
 def resend_verification():
+    """Resend verification email to current user"""
     if current_user.email_verified:
         flash('Your email is already verified.', 'info')
         return redirect(url_for('dashboard'))
