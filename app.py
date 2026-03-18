@@ -237,7 +237,8 @@ def register():
             app.logger.error(f"Unexpected error sending email to {user.email}: {str(e)}")
             flash('Registration successful! Please check your email for verification link.', 'success')
 
-        return redirect(url_for('login'))
+        # Redirect to verification reminder page instead of login
+        return redirect(url_for('verify_email_reminder'))
 
     return render_template('register.html', form=form)
 
