@@ -434,28 +434,14 @@ def forgot_password():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
-            token = secrets.token_urlsafe(32)
-            reset = PasswordReset(
-                user_id=user.id,
-                token=token,
-                expires_at=datetime.utcnow() + timedelta(hours=1)
-            )
-            db.session.add(reset)
-            db.session.commit()
-
-            # Only send email if not in test mode
-            if not EMAIL_TEST_MODE:
-                try:
-                    send_password_reset_email(user, token)
-                except Exception as e:
-                    app.logger.error(f"Password reset email failed: {str(e)}")
-            else:
-                app.logger.info(f"Password reset token for {user.email}: {token}")
-
-        flash('If an account exists with that email, you will receive password reset instructions.', 'info')
+            # For now, just inform them to contact admin
+            flash('Password reset is temporarily unavailable. Please contact admin for assistance.', 'warning')
+        else:
+            flash('If an account exists with that email, you will receive password reset instructions.', 'info')
         return redirect(url_for('login'))
 
     return render_template('forgot_password.html', form=form)
+
 
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):

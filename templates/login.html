@@ -14,7 +14,6 @@
     <script src="{{ url_for('static', filename='js/history-manager.js') }}"></script>
 
     <style>
-        /* Gold on Navy with Morphism */
         * {
             margin: 0;
             padding: 0;
@@ -24,14 +23,13 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #1a2b4c; /* Light navy base */
+            background: #1a2b4c;
             min-height: 100vh;
             position: relative;
             overflow-x: hidden;
             color: rgba(255, 255, 255, 0.9);
         }
 
-        /* Subtle grain texture */
         body::before {
             content: '';
             position: fixed;
@@ -45,7 +43,6 @@
             opacity: 0.15;
         }
 
-        /* ===== PAGE LOADER ===== */
         .page-loader {
             position: fixed;
             top: 0;
@@ -71,7 +68,6 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ===== SKELETON LOADING STATES ===== */
         .skeleton {
             background: linear-gradient(90deg,
                 rgba(255, 255, 255, 0.03) 25%,
@@ -105,7 +101,6 @@
             border: 1px solid rgba(251, 191, 36, 0.1);
         }
 
-        /* ===== BACKGROUND ===== */
         .background {
             position: absolute;
             top: 0;
@@ -126,7 +121,6 @@
             z-index: 1;
         }
 
-        /* ===== CONTENT ===== */
         .content {
             position: relative;
             z-index: 10;
@@ -139,7 +133,6 @@
             width: 100%;
         }
 
-        /* ===== CLOSE BUTTON ===== */
         .close-btn {
             position: absolute;
             top: 24px;
@@ -168,7 +161,6 @@
 
         .close-btn:active { transform: scale(0.95); }
 
-        /* ===== HEADER ===== */
         .login-header {
             text-align: center;
             margin-top: 40px;
@@ -201,7 +193,6 @@
             font-size: 1rem;
         }
 
-        /* ===== FORM CONTAINER ===== */
         .form-container {
             flex: 1;
             display: flex;
@@ -210,7 +201,6 @@
             width: 100%;
         }
 
-        /* ===== INPUT GROUPS ===== */
         .input-group {
             margin-bottom: 24px;
             animation: slideUp 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
@@ -287,7 +277,6 @@
             border-color: #EF4444;
         }
 
-        /* ===== VALIDATION CHECKMARK ===== */
         .validation-icon {
             position: absolute;
             right: 50px;
@@ -303,7 +292,6 @@
             opacity: 1;
         }
 
-        /* ===== PASSWORD TOGGLE ===== */
         .password-toggle {
             position: absolute;
             right: 20px;
@@ -325,7 +313,6 @@
 
         .password-toggle:active { transform: translateY(-50%) scale(0.95); }
 
-        /* ===== ERROR MESSAGE ===== */
         .error-message {
             color: #F87171;
             font-size: 0.8rem;
@@ -336,7 +323,6 @@
             gap: 4px;
         }
 
-        /* ===== LOGIN BUTTON ===== */
         .login-btn {
             width: 100%;
             padding: 18px 32px;
@@ -394,12 +380,6 @@
             animation: spin 1s linear infinite;
         }
 
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        /* ===== FORGOT PASSWORD ===== */
         .forgot-link {
             text-align: center;
             margin-bottom: 30px;
@@ -423,7 +403,6 @@
 
         .forgot-link a:active { transform: scale(0.97); }
 
-        /* ===== SIGN UP FOOTER ===== */
         .signup-footer {
             text-align: center;
             color: rgba(255,255,255,0.4);
@@ -450,7 +429,6 @@
 
         .signup-footer a:active { opacity: 0.8; }
 
-        /* ===== TOAST NOTIFICATIONS ===== */
         .toast-container {
             position: fixed;
             top: 20px;
@@ -509,23 +487,12 @@
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        /* ===== SKELETON CARD ===== */
-        .skeleton-card {
-            background: rgba(30, 58, 95, 0.3);
-            backdrop-filter: blur(10px);
-            border-radius: 32px;
-            padding: 40px 24px;
-            border: 1px solid rgba(251, 191, 36, 0.1);
-        }
-
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 380px) {
             .login-header h1 {
                 font-size: 2.5rem;
             }
         }
 
-        /* ===== SAFE AREAS ===== */
         @supports (padding: max(0px)) {
             .content {
                 padding-left: max(24px, env(safe-area-inset-left));
@@ -540,49 +507,38 @@
     </style>
 </head>
 <body>
-    <!-- Page Loader -->
     <div class="page-loader" id="pageLoader">
         <div class="loader-spinner"></div>
     </div>
 
-    <!-- Toast Container -->
     <div id="toastContainer" class="toast-container"></div>
 
     <div class="background"></div>
 
     <div class="content">
-        <!-- Close button -->
         <a href="{{ url_for('index') }}" class="close-btn">
             <i class="bi bi-x-lg"></i>
         </a>
 
-        <!-- Main Content with Skeleton -->
         <div id="mainContent">
-            <!-- Skeleton Content (shown initially) -->
             <div id="skeletonContent">
                 <div class="skeleton-card">
                     <div class="skeleton-line w50" style="height: 40px; margin: 0 auto 12px;"></div>
                     <div class="skeleton-line w70" style="height: 20px; margin: 0 auto 40px;"></div>
-
                     <div style="margin-bottom: 24px;">
                         <div class="skeleton-line w30" style="height: 20px;"></div>
                         <div class="skeleton-line w100" style="height: 56px;"></div>
                     </div>
-
                     <div style="margin-bottom: 24px;">
                         <div class="skeleton-line w30" style="height: 20px;"></div>
                         <div class="skeleton-line w100" style="height: 56px;"></div>
                     </div>
-
                     <div class="skeleton-line w100" style="height: 56px; margin: 20px 0;"></div>
-
                     <div class="skeleton-line w60" style="height: 20px; margin: 0 auto;"></div>
                 </div>
             </div>
 
-            <!-- Real Content (hidden initially) -->
             <div id="realContent" style="display: none;">
-                <!-- Header -->
                 <div class="login-header">
                     <h1>
                         <span class="highlight">my</span>MSCE
@@ -590,12 +546,10 @@
                     <p>Welcome back! Sign in to continue</p>
                 </div>
 
-                <!-- Form -->
                 <div class="form-container">
                     <form method="POST" action="{{ url_for('login') }}" id="loginForm">
                         {{ form.hidden_tag() }}
 
-                        <!-- Email field -->
                         <div class="input-group">
                             <label class="input-label">
                                 <i class="bi bi-envelope-fill"></i>
@@ -620,7 +574,6 @@
                             {% endif %}
                         </div>
 
-                        <!-- Password field -->
                         <div class="input-group">
                             <label class="input-label">
                                 <i class="bi bi-lock-fill"></i>
@@ -648,20 +601,16 @@
                             {% endif %}
                         </div>
 
-                        <!-- Remember me (hidden) -->
                         {{ form.remember(id="remember", style="display: none;") }}
 
-                        <!-- Login button -->
                         <button type="submit" class="login-btn" id="submitBtn">
                             <span>SIGN IN</span>
                         </button>
 
-                        <!-- Forgot password -->
                         <div class="forgot-link">
                             <a href="{{ url_for('forgot_password') }}">Forgot your password?</a>
                         </div>
 
-                        <!-- Sign up footer -->
                         <div class="signup-footer">
                             Don't have an account?
                             <a href="{{ url_for('register') }}">Sign up</a>
@@ -673,7 +622,6 @@
     </div>
 
     <script>
-        // ===== TOAST FUNCTION =====
         function showToast(message, type = 'info', duration = 5000) {
             const container = document.getElementById('toastContainer');
             if (!container) return;
@@ -707,21 +655,17 @@
             }, duration);
         }
 
-        // ===== PAGE LOADER & SKELETON =====
         window.addEventListener('load', function() {
-            // Hide loader after 800ms
             setTimeout(() => {
                 document.getElementById('pageLoader').classList.add('hidden');
             }, 800);
 
-            // Show skeleton for 1s, then real content
             setTimeout(() => {
                 document.getElementById('skeletonContent').style.display = 'none';
                 document.getElementById('realContent').style.display = 'block';
             }, 1000);
         });
 
-        // ===== FLASH MESSAGES =====
         document.addEventListener('DOMContentLoaded', function() {
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -734,7 +678,6 @@
             {% endwith %}
         });
 
-        // ===== PASSWORD TOGGLE =====
         document.addEventListener('DOMContentLoaded', function() {
             const togglePassword = document.getElementById('togglePassword');
             const password = document.getElementById('password');
@@ -754,7 +697,6 @@
                 });
             }
 
-            // Email validation simulation
             const emailInput = document.getElementById('email');
             if (emailInput) {
                 emailInput.addEventListener('input', function() {
@@ -766,7 +708,6 @@
                 });
             }
 
-            // Form submission loading
             const form = document.getElementById('loginForm');
             const submitBtn = document.getElementById('submitBtn');
 
