@@ -1000,7 +1000,7 @@ def process_payment(payment_id):
             email=current_user.email,
             name=current_user.username,
             reference=payment.reference,
-            callback_url="https://lusty-velda-wavy.ngrok-free.dev/paychangu-webhook"
+            callback_url=f"{app.config['SITE_URL']}/paychangu-webhook"
 
         )
 

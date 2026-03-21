@@ -23,7 +23,7 @@ class PayChangu:
         logger.info(f"PayChangu initialized in {mode} mode with URL: {self.base_url}")
 
     def get_headers(self):
-        """Get headers for API requests with ngrok bypass"""
+        """Get headers for API requests"""
         secret_key = current_app.config.get('PAYCHANGU_SECRET_KEY')
         if not secret_key:
             logger.error("PAYCHANGU_SECRET_KEY not found in config")
@@ -32,8 +32,8 @@ class PayChangu:
         return {
             "Accept": "application/json",
             "Authorization": f"Bearer {secret_key}",
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true"  # ← ADDED THIS LINE
+            "Content-Type": "application/json"
+            # REMOVE ngrok-skip-browser-warning header
         }
 
     def initiate_mobile_money_payment(self, amount, phone_number, email, name, reference, callback_url=None):
