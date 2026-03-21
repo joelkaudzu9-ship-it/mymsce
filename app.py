@@ -316,11 +316,16 @@ def register():
             flash('Registration failed. Please try again.', 'danger')
             return redirect(url_for('register'))
 
-        # Send verification email in background (don't let it block)
+        # Send verification email in background with app context
         try:
-            # Use a timeout to prevent hanging
+            from flask import copy_current_app_context
+
+            @copy_current_app_context
+            def send_email_in_background():
+                send_verification_email(user)
+
             import threading
-            email_thread = threading.Thread(target=send_verification_email, args=(user,))
+            email_thread = threading.Thread(target=send_email_in_background)
             email_thread.daemon = True
             email_thread.start()
 
@@ -334,6 +339,7 @@ def register():
         return redirect(url_for('login'))
 
     return render_template('register.html', form=form)
+
 
 @app.route('/verify-email/<token>')
 def verify_email(token):
