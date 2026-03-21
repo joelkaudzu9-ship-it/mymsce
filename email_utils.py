@@ -95,6 +95,15 @@ def confirm_token(token, expiration=3600):
         logger.info(f"Token confirmed (dev mode): {token}")
         return "dev@example.com"
 
+def send_email_safe(func, *args, **kwargs):
+    """Safe email sending that doesn't crash the app"""
+    try:
+        return func(*args, **kwargs)
+    except Exception as e:
+        print(f"⚠️ Email failed (non-critical): {e}")
+        return False, [str(e)]
+
+
 
 def send_verification_email(user):
     """Send email verification link with error handling"""

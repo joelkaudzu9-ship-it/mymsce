@@ -1,18 +1,8 @@
-# gunicorn.conf.py
-import multiprocessing
-
-# Bind to host and port
+# gunicorn.conf.py - MINIMAL MEMORY SETUP
 bind = "0.0.0.0:10000"
-
-# Number of workers
-workers = multiprocessing.cpu_count() * 2 + 1
-
-# Increase timeout to 120 seconds (handles email sending)
-timeout = 120
-
-# Log level
-loglevel = "info"
-
-# Access log
-accesslog = "-"
-errorlog = "-"
+workers = 1
+threads = 1
+timeout = 60
+worker_class = "sync"
+max_requests = 200
+max_requests_jitter = 50
