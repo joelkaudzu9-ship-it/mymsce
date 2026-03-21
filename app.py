@@ -1,5 +1,62 @@
 # app.py
+import sys
 import os
+print("=" * 60)
+print("Starting app.py...")
+print(f"Python version: {sys.version}")
+print(f"Current directory: {os.getcwd()}")
+print(f"Files in current dir: {os.listdir('.')}")
+print("=" * 60)
+
+# Check if .env file exists (though on Render you use environment variables)
+if os.path.exists('.env'):
+    print("✅ .env file found")
+else:
+    print("⚠️ .env file not found (this is normal on Render)")
+
+print("\nAttempting imports...")
+try:
+    print("Importing flask...")
+    from flask import Flask
+    print("✅ Flask imported")
+except Exception as e:
+    print(f"❌ Failed to import Flask: {e}")
+    sys.exit(1)
+
+try:
+    print("Importing models...")
+    from models import db, User, Subject, Lesson, Payment, EmailVerification, PasswordReset, Progress
+    print("✅ Models imported")
+except Exception as e:
+    print(f"❌ Failed to import models: {e}")
+    sys.exit(1)
+
+try:
+    print("Importing forms...")
+    from forms import LoginForm, RegistrationForm, PaymentForm, RequestResetForm, ResetPasswordForm
+    print("✅ Forms imported")
+except Exception as e:
+    print(f"❌ Failed to import forms: {e}")
+    sys.exit(1)
+
+try:
+    print("Importing email_utils...")
+    from email_utils import mail, send_verification_email, send_welcome_email, send_password_reset_email, send_payment_confirmation_email, test_smtp_connection
+    print("✅ Email utils imported")
+except Exception as e:
+    print(f"❌ Failed to import email_utils: {e}")
+    sys.exit(1)
+
+try:
+    print("Importing paychangu...")
+    from paychangu import PayChangu
+    print("✅ PayChangu imported")
+except Exception as e:
+    print(f"❌ Failed to import paychangu: {e}")
+    sys.exit(1)
+
+print("\n✅ All imports successful!")
+print("=" * 60)
 import secrets
 import json
 import re
@@ -61,39 +118,38 @@ app.config['SESSION_COOKIE_DOMAIN'] = None
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
-# Database configuration with SSL fix
+# Database configuration
 database_url = os.getenv('DATABASE_URL', 'sqlite:///mymsce.db')
 
 # Fix for Render's PostgreSQL (postgres:// -> postgresql://)
 if database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
-# Add SSL parameters to the connection string for PostgreSQL
-if 'postgresql' in database_url:
-    # Add SSL mode to prevent connection drops
-    if '?' in database_url:
-        database_url += '&sslmode=require'
-    else:
-        database_url += '?sslmode=require'
-
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Add connection pool settings for better stability
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 10,
-    'pool_recycle': 300,
-    'pool_pre_ping': True,
-    'max_overflow': 20,
-    'connect_args': {
-        'sslmode': 'require',
-        'keepalives': 1,
-        'keepalives_idle': 30,
-        'keepalives_interval': 10,
-        'keepalives_count': 5
+# Only add SSL and connection pool settings for PostgreSQL
+if 'postgresql' in database_url:
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_size': 5,
+        'pool_recycle': 300,
+        'pool_pre_ping': True,
+        'max_overflow': 5,
+        'connect_args': {
+            'sslmode': 'require',
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5
+        }
     }
-}
-
+else:
+    # For SQLite, use simple options
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_size': 1,
+        'pool_recycle': 300,
+        'pool_pre_ping': True
+    }
 
 
 

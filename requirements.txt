@@ -5,7 +5,8 @@ Flask-WTF==1.2.1
 Flask-Mail==0.9.1
 Werkzeug==2.3.7
 python-dotenv==1.0.0
-email-validator==2.2.0  # Updated from 2.1.0
+email-validator==2.2.0
 requests==2.31.0
 gunicorn==21.2.0
 psycopg2-binary==2.9.9
+paychangu  # Add this line
