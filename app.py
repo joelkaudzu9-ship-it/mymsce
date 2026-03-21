@@ -293,13 +293,11 @@ def register():
 
     form = RegistrationForm()
     if form.validate_on_submit():
-        # Check if user exists
         user = User.query.filter_by(email=form.email.data).first()
         if user:
             flash('Email already registered. Please login.', 'danger')
             return redirect(url_for('login'))
 
-        # Create new user
         user = User(
             username=form.username.data,
             email=form.email.data,
@@ -311,26 +309,31 @@ def register():
         try:
             db.session.add(user)
             db.session.commit()
+            user_id = user.id  # Capture ID before session closes
+
+            # Send email in background with fresh session
+            def send_email_background():
+                with app.app_context():
+                    # Get a fresh session
+                    from flask_sqlalchemy import SQLAlchemy
+                    user_to_email = User.query.get(user_id)
+                    if user_to_email:
+                        try:
+                            send_verification_email(user_to_email)
+                        except Exception as e:
+                            app.logger.error(f"Email failed: {e}")
+
+            import threading
+            email_thread = threading.Thread(target=send_email_background)
+            email_thread.daemon = True
+            email_thread.start()
+
+            flash('Registration successful! Please check your email to verify your account.', 'success')
         except Exception as e:
-            app.logger.error(f"Database error during registration: {str(e)}")
+            app.logger.error(f"Registration error: {str(e)}")
             flash('Registration failed. Please try again.', 'danger')
             return redirect(url_for('register'))
 
-        # Send verification email in background with app context
-        def send_verification_with_context():
-            with app.app_context():
-                try:
-                    send_verification_email(user)
-                    app.logger.info(f"Verification email sent to {user.email}")
-                except Exception as e:
-                    app.logger.error(f"Email sending failed for {user.email}: {str(e)}")
-
-        import threading
-        email_thread = threading.Thread(target=send_verification_with_context)
-        email_thread.daemon = True
-        email_thread.start()
-
-        flash('Registration successful! Please check your email to verify your account.', 'success')
         return redirect(url_for('login'))
 
     return render_template('register.html', form=form)
@@ -344,6 +347,7 @@ def test_email_send():
         msg = Message(
             subject="Test Email from myMSCE",
             sender=app.config['MAIL_DEFAULT_SENDER'],
+
             recipients=["your-test-email@gmail.com"],  # Change this
             body="This is a test email from your myMSCE application."
         )
