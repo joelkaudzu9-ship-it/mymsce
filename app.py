@@ -298,18 +298,17 @@ def register():
 
     form = RegistrationForm()
     if form.validate_on_submit():
-        # Check if user exists
         user = User.query.filter_by(email=form.email.data).first()
         if user:
             flash('Email already registered. Please login.', 'danger')
             return redirect(url_for('login'))
 
-        # Create new user
+        # Create new user with auto-verify for now
         user = User(
             username=form.username.data,
             email=form.email.data,
             phone=form.phone.data,
-            email_verified=True,  # Auto-verify in test mode
+            email_verified=True,  # Auto-verify since email not working yet
             is_verified=True
         )
         user.set_password(form.password.data)
@@ -317,29 +316,14 @@ def register():
         try:
             db.session.add(user)
             db.session.commit()
-
-            # Only try to send email if not in test mode
-            if not EMAIL_TEST_MODE:
-                try:
-                    send_verification_email(user)
-                    flash('Registration successful! Please check your email to verify your account.', 'success')
-                except Exception as e:
-                    app.logger.error(f"Email sending failed: {str(e)}")
-                    flash(
-                        'Registration successful! However, there was an issue sending the verification email. You can request a new verification link after logging in.',
-                        'warning')
-            else:
-                flash('Registration successful! (Test mode - email skipped)', 'success')
-
+            flash('Registration successful! You can now login.', 'success')
             return redirect(url_for('login'))
-
         except Exception as e:
-            app.logger.error(f"Database error during registration: {str(e)}")
+            app.logger.error(f"Database error: {str(e)}")
             flash('Registration failed. Please try again.', 'danger')
             return redirect(url_for('register'))
 
     return render_template('register.html', form=form)
-
 @app.route('/test-email-send')
 def test_email_send():
     """Test email sending - remove after testing"""
