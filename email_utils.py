@@ -3,32 +3,10 @@ from flask import current_app, url_for
 import logging
 import secrets
 from datetime import datetime, timedelta
-
-# email_utils.py - Add this helper function
-from flask import current_app
-
-
-def get_site_url():
-    """Get the base site URL from config"""
-    site_url = current_app.config.get('SITE_URL', 'http://localhost:5000')
-    # Remove trailing slash if present
-    if site_url.endswith('/'):
-        site_url = site_url[:-1]
-    return site_url
-
-
-def site_url_for(endpoint, **kwargs):
-    """Generate a URL using SITE_URL instead of localhost"""
-    from flask import url_for
-    site_url = get_site_url()
-    path = url_for(endpoint, **kwargs)
-    return f"{site_url}{path}"
-
-
-def get_base_url():
-    """Get the base URL from config or fallback to render URL"""
-    return current_app.config.get('SITE_URL', 'https://mymsce.onrender.com').rstrip('/')
-
+import smtplib
+import socket
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -69,6 +47,25 @@ except ImportError:
     mail = Mail()
 
 
+def get_base_url():
+    """Get the base URL from config"""
+    # First try SITE_URL from config
+    site_url = current_app.config.get('SITE_URL')
+
+    if site_url:
+        return site_url.rstrip('/')
+
+    # Fallback to Render URL
+    return 'https://mymsce3.onrender.com'
+
+
+def site_url_for(endpoint, **kwargs):
+    """Generate a URL using the site URL instead of localhost"""
+    base_url = get_base_url()
+    path = url_for(endpoint, **kwargs)
+    return f"{base_url}{path}"
+
+
 def generate_token(email):
     """Generate a secure token for email verification"""
     if HAS_FLASK_MAIL:
@@ -94,15 +91,6 @@ def confirm_token(token, expiration=3600):
         # In development, accept any token
         logger.info(f"Token confirmed (dev mode): {token}")
         return "dev@example.com"
-
-def send_email_safe(func, *args, **kwargs):
-    """Safe email sending that doesn't crash the app"""
-    try:
-        return func(*args, **kwargs)
-    except Exception as e:
-        print(f"⚠️ Email failed (non-critical): {e}")
-        return False, [str(e)]
-
 
 
 def send_verification_email(user):
@@ -152,11 +140,15 @@ def send_verification_email(user):
         '''
 
         if HAS_FLASK_MAIL:
-            # Create email message
+            # Get sender from config
+            sender = current_app.config.get('MAIL_DEFAULT_SENDER', 'myMSCE <mymsce3@gmail.com>')
+
+            # Create email message with explicit sender
             msg = Message(
                 subject='Verify your myMSCE email',
                 recipients=[user.email],
-                html=html_content
+                html=html_content,
+                sender=sender
             )
 
             # Try to send
@@ -171,16 +163,13 @@ def send_verification_email(user):
             print("🔥" * 50 + "\n")
             logger.info(f"Development mode: Verification email logged for {user.email}")
 
-        return True, []
+        return True
 
     except Exception as e:
         error_msg = f"Verification email sending failed: {str(e)}"
         print(f"❌ {error_msg}")
         logger.error(error_msg)
-        # Log the error but don't crash
-        return False, [str(e)]
-
-
+        return False
 def send_welcome_email(user):
     """Send welcome email after verification with error handling"""
     try:
@@ -238,15 +227,11 @@ def send_welcome_email(user):
             mail.send(msg)
             print(f"✅ Welcome email sent to {user.email}")
             logger.info(f"Welcome email sent to {user.email}")
-        else:
-            print(f"\n🎉 Welcome email for {user.username}")
-            logger.info(f"Development mode: Welcome email logged for {user.email}")
 
     except Exception as e:
         error_msg = f"Welcome email sending failed for {user.email}: {str(e)}"
         print(f"❌ {error_msg}")
         logger.error(error_msg)
-        # Don't re-raise, just log the error
 
 
 def send_password_reset_email(user, token):
@@ -303,45 +288,11 @@ def send_password_reset_email(user, token):
             mail.send(msg)
             print(f"✅ Password reset email sent to {user.email}")
             logger.info(f"Password reset email sent to {user.email}")
-        else:
-            print("\n" + "🔑" * 50)
-            print("PASSWORD RESET LINK FOR:", user.email)
-            print(reset_url)
-            print("🔑" * 50 + "\n")
-            logger.info(f"Development mode: Password reset email logged for {user.email}")
 
     except Exception as e:
         error_msg = f"Password reset email sending failed for {user.email}: {str(e)}"
         print(f"❌ {error_msg}")
         logger.error(error_msg)
-        # Don't re-raise, just log the error
-
-
-def test_smtp_connection():
-    """Test SMTP connection configuration"""
-    import smtplib
-    import socket
-    from flask import current_app
-
-    try:
-        server = smtplib.SMTP(
-            current_app.config['MAIL_SERVER'],
-            current_app.config['MAIL_PORT'],
-            timeout=10
-        )
-        server.starttls()
-        server.login(
-            current_app.config['MAIL_USERNAME'],
-            current_app.config['MAIL_PASSWORD']
-        )
-        server.quit()
-        return True, "SMTP connection successful!"
-    except smtplib.SMTPAuthenticationError:
-        return False, "Authentication failed. Check your email/password."
-    except socket.error as e:
-        return False, f"Network error: {str(e)}"
-    except Exception as e:
-        return False, f"Error: {str(e)}"
 
 
 def send_payment_confirmation_email(user, payment):
@@ -377,7 +328,7 @@ def send_payment_confirmation_email(user, payment):
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
                             <td style="padding: 8px 0;"><strong>Amount:</strong></td>
-                            <td style="padding: 8px 0;">MWK {payment.amount}</td>
+                            <td style="padding: 8px 0;">MWK {payment.amount:,}</td>
                         </tr>
                         <tr>
                             <td style="padding: 8px 0;"><strong>Subscription:</strong></td>
@@ -417,12 +368,45 @@ def send_payment_confirmation_email(user, payment):
             mail.send(msg)
             print(f"✅ Payment confirmation email sent to {user.email}")
             logger.info(f"Payment confirmation email sent to {user.email}")
-        else:
-            print(f"\n💰 Payment confirmation for {user.username}: MWK {payment.amount}")
-            logger.info(f"Development mode: Payment confirmation email logged for {user.email}")
 
     except Exception as e:
         error_msg = f"Payment confirmation email sending failed for {user.email}: {str(e)}"
         print(f"❌ {error_msg}")
         logger.error(error_msg)
-        # Don't re-raise, just log the error
+
+
+def test_smtp_connection():
+    """Test SMTP connection configuration"""
+    from flask import current_app
+
+    try:
+        print("Testing SMTP connection...")
+        server = smtplib.SMTP(
+            current_app.config['MAIL_SERVER'],
+            current_app.config['MAIL_PORT'],
+            timeout=10
+        )
+        server.starttls()
+        server.login(
+            current_app.config['MAIL_USERNAME'],
+            current_app.config['MAIL_PASSWORD']
+        )
+        server.quit()
+        print("✅ SMTP connection successful!")
+        return True, "SMTP connection successful!"
+    except smtplib.SMTPAuthenticationError as e:
+        error_msg = f"Authentication failed: {str(e)}"
+        print(f"❌ {error_msg}")
+        return False, error_msg
+    except socket.timeout:
+        error_msg = "Connection timeout"
+        print(f"❌ {error_msg}")
+        return False, error_msg
+    except socket.error as e:
+        error_msg = f"Network error: {str(e)}"
+        print(f"❌ {error_msg}")
+        return False, error_msg
+    except Exception as e:
+        error_msg = f"Error: {str(e)}"
+        print(f"❌ {error_msg}")
+        return False, error_msg

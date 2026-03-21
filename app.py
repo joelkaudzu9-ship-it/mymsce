@@ -170,9 +170,8 @@ app.config['PAYCHANGU_PUBLIC_KEY'] = os.getenv('PAYCHANGU_PUBLIC_KEY')
 app.config['PAYCHANGU_SECRET_KEY'] = os.getenv('PAYCHANGU_SECRET_KEY')
 app.config['PAYCHANGU_WEBHOOK_SECRET'] = os.getenv('PAYCHANGU_WEBHOOK_SECRET')
 app.config['PAYCHANGU_MODE'] = os.getenv('PAYCHANGU_MODE', 'sandbox')
-
-# ✅ IMPORTANT - Site URL for emails and webhooks
-app.config['SITE_URL'] = os.getenv('SITE_URL', 'https://mymsce.onrender.com').rstrip('/')
+# Site URL for emails and webhooks
+app.config['SITE_URL'] = os.getenv('SITE_URL', 'https://mymsce3.onrender.com').rstrip('/')
 
 
 # Initialize extensions
