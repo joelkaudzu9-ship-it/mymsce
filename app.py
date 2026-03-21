@@ -336,6 +336,23 @@ def register():
     return render_template('register.html', form=form)
 
 
+@app.route('/test-email-send')
+def test_email_send():
+    """Test email sending - remove after testing"""
+    try:
+        from flask_mail import Message
+        msg = Message(
+            subject="Test Email from myMSCE",
+            sender=app.config['MAIL_DEFAULT_SENDER'],
+            recipients=["your-test-email@gmail.com"],  # Change this
+            body="This is a test email from your myMSCE application."
+        )
+        mail.send(msg)
+        return "Email sent successfully! Check your inbox."
+    except Exception as e:
+        return f"Email failed: {str(e)}"
+
+
 @app.route('/verify-email/<token>')
 def verify_email(token):
     from email_utils import confirm_token
