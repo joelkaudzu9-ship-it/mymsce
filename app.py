@@ -317,25 +317,20 @@ def register():
             return redirect(url_for('register'))
 
         # Send verification email in background with app context
-        try:
-            from flask import copy_current_app_context
+        def send_verification_with_context():
+            with app.app_context():
+                try:
+                    send_verification_email(user)
+                    app.logger.info(f"Verification email sent to {user.email}")
+                except Exception as e:
+                    app.logger.error(f"Email sending failed for {user.email}: {str(e)}")
 
-            @copy_current_app_context
-            def send_email_in_background():
-                send_verification_email(user)
+        import threading
+        email_thread = threading.Thread(target=send_verification_with_context)
+        email_thread.daemon = True
+        email_thread.start()
 
-            import threading
-            email_thread = threading.Thread(target=send_email_in_background)
-            email_thread.daemon = True
-            email_thread.start()
-
-            flash('Registration successful! Please check your email to verify your account.', 'success')
-        except Exception as e:
-            app.logger.error(f"Email sending failed for {user.email}: {str(e)}")
-            flash(
-                'Registration successful! However, there was an issue sending the verification email. You can request a new verification link after logging in.',
-                'warning')
-
+        flash('Registration successful! Please check your email to verify your account.', 'success')
         return redirect(url_for('login'))
 
     return render_template('register.html', form=form)
