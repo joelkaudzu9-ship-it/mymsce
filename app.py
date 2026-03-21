@@ -8,6 +8,12 @@ print(f"Current directory: {os.getcwd()}")
 print(f"Files in current dir: {os.listdir('.')}")
 print("=" * 60)
 
+# Email test mode - set to True to skip actual email sending
+EMAIL_TEST_MODE = os.getenv('EMAIL_TEST_MODE', 'False') == 'True'
+
+
+
+
 # Check if .env file exists (though on Render you use environment variables)
 if os.path.exists('.env'):
     print("✅ .env file found")
@@ -292,51 +298,47 @@ def register():
 
     form = RegistrationForm()
     if form.validate_on_submit():
+        # Check if user exists
         user = User.query.filter_by(email=form.email.data).first()
         if user:
             flash('Email already registered. Please login.', 'danger')
             return redirect(url_for('login'))
 
+        # Create new user
         user = User(
             username=form.username.data,
             email=form.email.data,
             phone=form.phone.data,
-            email_verified=False
+            email_verified=True,  # Auto-verify in test mode
+            is_verified=True
         )
         user.set_password(form.password.data)
 
         try:
             db.session.add(user)
             db.session.commit()
-            user_id = user.id  # Capture ID before session closes
 
-            # Send email in background with fresh session
-            def send_email_background():
-                with app.app_context():
-                    # Get a fresh session
-                    from flask_sqlalchemy import SQLAlchemy
-                    user_to_email = User.query.get(user_id)
-                    if user_to_email:
-                        try:
-                            send_verification_email(user_to_email)
-                        except Exception as e:
-                            app.logger.error(f"Email failed: {e}")
+            # Only try to send email if not in test mode
+            if not EMAIL_TEST_MODE:
+                try:
+                    send_verification_email(user)
+                    flash('Registration successful! Please check your email to verify your account.', 'success')
+                except Exception as e:
+                    app.logger.error(f"Email sending failed: {str(e)}")
+                    flash(
+                        'Registration successful! However, there was an issue sending the verification email. You can request a new verification link after logging in.',
+                        'warning')
+            else:
+                flash('Registration successful! (Test mode - email skipped)', 'success')
 
-            import threading
-            email_thread = threading.Thread(target=send_email_background)
-            email_thread.daemon = True
-            email_thread.start()
+            return redirect(url_for('login'))
 
-            flash('Registration successful! Please check your email to verify your account.', 'success')
         except Exception as e:
-            app.logger.error(f"Registration error: {str(e)}")
+            app.logger.error(f"Database error during registration: {str(e)}")
             flash('Registration failed. Please try again.', 'danger')
             return redirect(url_for('register'))
 
-        return redirect(url_for('login'))
-
     return render_template('register.html', form=form)
-
 
 @app.route('/test-email-send')
 def test_email_send():
@@ -456,13 +458,20 @@ def forgot_password():
             )
             db.session.add(reset)
             db.session.commit()
-            send_password_reset_email(user, token)
+
+            # Only send email if not in test mode
+            if not EMAIL_TEST_MODE:
+                try:
+                    send_password_reset_email(user, token)
+                except Exception as e:
+                    app.logger.error(f"Password reset email failed: {str(e)}")
+            else:
+                app.logger.info(f"Password reset token for {user.email}: {token}")
 
         flash('If an account exists with that email, you will receive password reset instructions.', 'info')
         return redirect(url_for('login'))
 
     return render_template('forgot_password.html', form=form)
-
 
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
@@ -616,6 +625,57 @@ def dashboard():
     response.headers['Expires'] = '0'
 
     return response
+
+
+@app.route('/debug-smtp')
+def debug_smtp():
+    """Debug SMTP connection"""
+    import smtplib
+    import socket
+
+    results = []
+
+    # Test 1: Check if we can connect to Gmail SMTP
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=10)
+        results.append("✅ Connected to smtp.gmail.com:587")
+
+        # Test 2: Test STARTTLS
+        server.starttls()
+        results.append("✅ STARTTLS successful")
+
+        # Test 3: Try to login
+        username = app.config.get('MAIL_USERNAME')
+        password = app.config.get('MAIL_PASSWORD')
+
+        if username and password:
+            try:
+                server.login(username, password)
+                results.append(f"✅ Login successful for {username}")
+            except smtplib.SMTPAuthenticationError as e:
+                results.append(f"❌ Authentication failed: {str(e)}")
+        else:
+            results.append("❌ MAIL_USERNAME or MAIL_PASSWORD not set")
+
+        server.quit()
+
+    except socket.timeout:
+        results.append("❌ Connection timeout to smtp.gmail.com:587")
+    except Exception as e:
+        results.append(f"❌ Error: {str(e)}")
+
+    # Show current config
+    results.append("\n📧 Current Email Configuration:")
+    results.append(f"MAIL_SERVER: {app.config.get('MAIL_SERVER')}")
+    results.append(f"MAIL_PORT: {app.config.get('MAIL_PORT')}")
+    results.append(f"MAIL_USE_TLS: {app.config.get('MAIL_USE_TLS')}")
+    results.append(f"MAIL_USERNAME: {app.config.get('MAIL_USERNAME')}")
+    results.append(f"MAIL_PASSWORD: {'*' * 8 if app.config.get('MAIL_PASSWORD') else 'NOT SET'}")
+    results.append(f"SITE_URL: {app.config.get('SITE_URL')}")
+
+    return "<br>".join(results)
+
+
 @app.route('/subject/<int:subject_id>')
 @login_required
 def view_subject(subject_id):
